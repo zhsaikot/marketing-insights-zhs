@@ -1,7 +1,9 @@
 {
   "dependencies": {
+    "lucide-react": "^1.46.0",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "react-router-dom": "^7.18.4"
   },
   "name": "marketing-insghts-zhs",
   "version": "1.0.0",

@@ -1,4 +1,14 @@
-export type Page = 'dashboard' | 'clients' | 'integrations' | 'reports';
+export type Page = 'dashboard' | 'clients' | 'integrations' | 'reports' | 'profile';
+
+export type UserRole = 'agency' | 'client';
+
+export interface AuthUser {
+  name: string;
+  email: string;
+  role: UserRole;
+  company: string;
+  verified: boolean;
+}
 
 export type Trend = 'up' | 'down' | 'neutral';
 
