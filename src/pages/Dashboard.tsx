@@ -1,16 +1,19 @@
+import { useEffect, useState } from 'react';
 import { MetricCard } from '../components/ui/MetricCard';
 import { TrafficChart } from '../components/dashboard/TrafficChart';
 import { InsightsPanel } from '../components/dashboard/InsightsPanel';
 import { KeywordsTable } from '../components/dashboard/KeywordsTable';
-import type { Metric } from '../types';
-
-const metrics: Metric[] = [
-  { label: 'Organic sessions', value: '184,290', change: '18.4%', trend: 'up' },
-  { label: 'Conversions', value: '8,642', change: '12.8%', trend: 'up' },
-  { label: 'Avg. position', value: '14.6', change: '2.1%', trend: 'up' },
-  { label: 'Visibility score', value: '68.4', change: '0.8%', trend: 'down' },
-];
+import { fetchAnalyticsReport, readAnalyticsConnection, type AnalyticsReport } from '../utils/analytics';
 
 export function Dashboard() {
-  return <div className="page-content"><div className="page-intro"><div><p className="eyebrow">Jul 16 - Jul 22, 2024</p><h2>Good morning, Ziaul.</h2><p className="muted">Here is what changed across your marketing portfolio this week.</p></div><button className="date-control">This week <span>v</span></button></div><div className="metric-grid">{metrics.map((metric) => <MetricCard key={metric.label} metric={metric} />)}</div><div className="dashboard-grid"><TrafficChart /><InsightsPanel /></div><KeywordsTable /></div>;
+  const [report, setReport] = useState<AnalyticsReport | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAnalyticsReport().then(setReport).catch((reason: Error) => setError(reason.message)).finally(() => setLoading(false));
+  }, []);
+
+  const connection = readAnalyticsConnection();
+  return <div className="page-content"><div className="page-intro"><div><p className="eyebrow">GA4 property {connection?.account || 'not connected'}</p><h2>Marketing performance</h2><p className="muted">{loading ? 'Loading the latest data from Google Analytics.' : error || 'Live data from your connected analytics property.'}</p></div><button className="date-control">Last 30 days <span>v</span></button></div>{error && <div className="auth-message">{error}</div>}{!error && !loading && report && <><div className="metric-grid">{report.metrics.map((metric) => <MetricCard key={metric.label} metric={metric} />)}</div><div className="dashboard-grid"><TrafficChart data={report.traffic} /><InsightsPanel /></div><KeywordsTable rows={report.keywords} /></>}{loading && <div className="auth-message">Loading analytics data...</div>}</div>;
 }

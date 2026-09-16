@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "googleapis": "^181.0.0",
     "lucide-react": "^1.46.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

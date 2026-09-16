@@ -5,7 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 
 type ConnectionMethod = 'oauth' | 'api';
-type Integration = { name: string; detail: string; connected: boolean; method?: ConnectionMethod; accountLabel: string; accountPlaceholder: string };
+type Integration = { name: string; detail: string; connected: boolean; method?: ConnectionMethod; account?: string; accountLabel: string; accountPlaceholder: string };
 
 const integrations: Integration[] = [
 	{ name: 'Google Analytics', detail: 'Traffic and conversion data', connected: false, accountLabel: 'GA4 property ID', accountPlaceholder: '例如 123456789' },
@@ -41,9 +41,9 @@ export function Integrations() {
 	const saveConnection = (event: React.FormEvent, item: Integration) => {
 		event.preventDefault();
 		if (!account.trim() || !credential.trim()) return;
-		const nextConnections = connections.map((connection) => connection.name === item.name ? { ...connection, connected: true, method } : connection);
+		const nextConnections = connections.map((connection) => connection.name === item.name ? { ...connection, connected: true, method, account: account.trim() } : connection);
 		setConnections(nextConnections);
-		localStorage.setItem(connectionStorageKey, JSON.stringify(Object.fromEntries(nextConnections.filter((connection) => connection.connected).map((connection) => [connection.name, { connected: true, method: connection.method }]))));
+		localStorage.setItem(connectionStorageKey, JSON.stringify(Object.fromEntries(nextConnections.filter((connection) => connection.connected).map((connection) => [connection.name, { connected: true, method: connection.method, account: connection.account }]))));
 		setCredential('');
 		setSavedMessage(`${item.name} connection details saved. Secure authorization will run when the API service is configured.`);
 	};

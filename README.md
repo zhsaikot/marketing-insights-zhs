@@ -1,5 +1,16 @@
 # marketing Insghts zhs
 
+## Live Google Analytics data
+
+The dashboard loads GA4 data through the Netlify Function at `/api/analytics`. Configure these prerequisites before deploying:
+
+1. Enable the Google Analytics Data API in Google Cloud.
+2. Create a service account and grant its email address Viewer access to the GA4 property.
+3. Add the service account JSON as the Netlify environment variable `GOOGLE_SERVICE_ACCOUNT_JSON`.
+4. Enter the numeric GA4 Property ID in the Marketing Expert integrations page.
+
+The Property ID selects the GA4 property; it does not authenticate API requests by itself. Service account credentials stay on the server and are never saved in browser storage.
+
 
 
 ## Getting started
