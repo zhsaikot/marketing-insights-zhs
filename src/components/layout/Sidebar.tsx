@@ -1,6 +1,11 @@
 import type { Page, UserRole } from '../../types';
+import { getStoredClients, getActiveClientId } from '../../utils/clients';
 
-interface SidebarProps { page: Page; onNavigate: (page: Page) => void; role: UserRole; }
+interface SidebarProps {
+  page: Page;
+  onNavigate: (page: Page) => void;
+  role: UserRole;
+}
 
 const items: { id: Page; label: string; icon: string; agencyOnly?: boolean }[] = [
   { id: 'dashboard', label: 'Overview', icon: 'OV' },
@@ -10,10 +15,46 @@ const items: { id: Page; label: string; icon: string; agencyOnly?: boolean }[] =
 ];
 
 export function Sidebar({ page, onNavigate, role }: SidebarProps) {
-  return <aside className="sidebar">
-    <div className="brand"><span className="brand-mark">M</span><span>market<span>ing</span> insights</span></div>
-    <p className="nav-label">Workspace</p>
-    <nav>{items.filter((item) => !item.agencyOnly || role === 'agency').map((item) => <button key={item.id} className={`nav-item ${page === item.id ? 'active' : ''}`} onClick={() => onNavigate(item.id)}><span className="nav-icon">{item.icon}</span>{item.label}</button>)}</nav>
-    <div className="sidebar-footer"><p className="nav-label">Current workspace</p><strong>{role === 'agency' ? 'Northstar agency' : 'Acme Commerce'}</strong><span>{role === 'agency' ? '12 active projects' : 'Client access'}</span></div>
-  </aside>;
+  const clients = getStoredClients();
+  const activeId = getActiveClientId();
+  const activeClient = clients.find((c) => c.id === activeId) || clients[0];
+
+  return (
+    <aside className="sidebar">
+      <div className="brand" style={{ cursor: 'pointer' }} onClick={() => onNavigate('dashboard')}>
+        <span className="brand-mark">M</span>
+        <span>
+          market<span>ing</span> insights
+        </span>
+      </div>
+
+      <p className="nav-label">Workspace</p>
+
+      <nav>
+        {items
+          .filter((item) => !item.agencyOnly || role === 'agency')
+          .map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`nav-item ${page === item.id ? 'active' : ''}`}
+              onClick={() => onNavigate(item.id)}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+      </nav>
+
+      <div className="sidebar-footer">
+        <p className="nav-label">Active Workspace</p>
+        <strong>{role === 'agency' ? (activeClient?.name || 'Northstar Agency') : 'Acme Commerce'}</strong>
+        <span>
+          {role === 'agency'
+            ? `${clients.length} active client accounts`
+            : 'Client portal access'}
+        </span>
+      </div>
+    </aside>
+  );
 }
