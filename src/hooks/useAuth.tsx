@@ -2,14 +2,20 @@ import { useState } from 'react';
 import type { AuthUser, UserRole } from '../types';
 
 const storageKey = 'marketing-insights-session';
-const demoUser: AuthUser = { name: 'Ziaul Hasan', email: 'zhsaikot@gmail.com', role: 'agency', company: 'Northstar agency', verified: true };
+const defaultAdminUser: AuthUser = {
+  name: 'Ziaul Hasan',
+  email: 'zhsaikot@gmail.com',
+  role: 'admin',
+  company: 'Northstar Agency',
+  verified: true,
+};
 
 function readSession(): AuthUser | null {
   try {
     const value = localStorage.getItem(storageKey);
-    return value ? JSON.parse(value) as AuthUser : null;
+    return value ? (JSON.parse(value) as AuthUser) : defaultAdminUser;
   } catch {
-    return null;
+    return defaultAdminUser;
   }
 }
 
@@ -23,9 +29,15 @@ export function useAuth() {
 
   return {
     user,
-    login: (email: string) => startSession({ ...demoUser, email, name: email.split('@')[0] || demoUser.name }),
-    loginWithGoogle: () => startSession(demoUser),
-    signup: (name: string, email: string, role: UserRole, company: string) => startSession({ name, email, role, company, verified: false }),
+    login: (email: string) =>
+      startSession({
+        ...defaultAdminUser,
+        email,
+        name: email.split('@')[0] || defaultAdminUser.name,
+      }),
+    loginWithGoogle: () => startSession(defaultAdminUser),
+    signup: (name: string, email: string, role: UserRole, company: string) =>
+      startSession({ name, email, role, company, verified: true }),
     verifyEmail: () => {
       if (!user) return;
       startSession({ ...user, verified: true });
@@ -33,6 +45,10 @@ export function useAuth() {
     updateProfile: (updates: Pick<AuthUser, 'name' | 'company'>) => {
       if (!user) return;
       startSession({ ...user, ...updates });
+    },
+    switchRole: (newRole: UserRole) => {
+      if (!user) return;
+      startSession({ ...user, role: newRole });
     },
     logout: () => {
       localStorage.removeItem(storageKey);

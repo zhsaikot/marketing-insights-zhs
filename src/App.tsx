@@ -43,9 +43,6 @@ function AppRoutes() {
   const currentPage: Page = validPages.includes(path as Page) ? (path as Page) : 'dashboard';
 
   const handleNavigate = (target: Page) => {
-    if (auth.user?.role === 'client' && (target === 'clients' || target === 'integrations')) {
-      return;
-    }
     navigate(target === 'dashboard' ? '/' : `/${target}`);
   };
 
@@ -61,17 +58,13 @@ function AppRoutes() {
         <Route path="/dashboard" element={<Navigate to="/" replace />} />
         <Route
           path="/clients"
-          element={
-            auth.user.role === 'agency' ? <Clients /> : <Navigate to="/" replace />
-          }
+          element={<Clients user={auth.user} onRoleSwitch={auth.switchRole} />}
         />
         <Route
           path="/integrations"
-          element={
-            auth.user.role === 'agency' ? <Integrations /> : <Navigate to="/" replace />
-          }
+          element={<Integrations user={auth.user} />}
         />
-        <Route path="/reports" element={<Reports />} />
+        <Route path="/reports" element={<Reports user={auth.user} />} />
         <Route
           path="/profile"
           element={

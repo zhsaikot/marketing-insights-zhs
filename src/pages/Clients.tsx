@@ -9,9 +9,16 @@ import {
   getActiveClientId,
   setActiveClientId,
 } from '../utils/clients';
-import type { ClientEntity } from '../types';
+import type { ClientEntity, AuthUser, UserRole } from '../types';
 
-export function Clients() {
+interface ClientsProps {
+  user: AuthUser;
+  onRoleSwitch?: (role: UserRole) => void;
+}
+
+export function Clients({ user, onRoleSwitch }: ClientsProps) {
+  const isViewer = user.role === 'viewer';
+
   const [clients, setClients] = useState<ClientEntity[]>(getStoredClients);
   const [activeId, setActiveId] = useState<string>(getActiveClientId);
   const [showInvite, setShowInvite] = useState(false);
@@ -27,6 +34,7 @@ export function Clients() {
 
   const handleCreateClient = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isViewer) return;
     if (!name.trim()) return;
 
     const newClient: ClientEntity = {
@@ -36,8 +44,8 @@ export function Clients() {
       role,
       status: 'healthy',
       lastSynced: 'Just now',
-      monthlySessions: '12,400',
-      monthlyConversions: '320',
+      monthlySessions: '14,200',
+      monthlyConversions: '380',
     };
 
     const updated = [newClient, ...clients];
@@ -54,12 +62,14 @@ export function Clients() {
   };
 
   const handleRoleChange = (clientId: string, newRole: 'admin' | 'editor' | 'viewer') => {
+    if (isViewer) return;
     const updated = clients.map((c) => (c.id === clientId ? { ...c, role: newRole } : c));
     setClients(updated);
     saveStoredClients(updated);
   };
 
   const handleDeleteClient = (clientId: string) => {
+    if (isViewer) return;
     if (clients.length <= 1) {
       alert('You must retain at least one client workspace.');
       return;
@@ -95,6 +105,49 @@ export function Clients() {
 
   return (
     <div className="page-content">
+      {/* Live Role Switcher Tester */}
+      <div
+        style={{
+          background: '#123c35',
+          color: '#fff',
+          padding: '10px 18px',
+          borderRadius: '8px',
+          marginBottom: '20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+          <span>Current Session Role:</span>
+          <Badge tone={user.role === 'admin' ? 'positive' : 'warning'}>
+            {user.role === 'admin' ? 'Workspace Admin' : 'Viewer (Freelancer)'}
+          </Badge>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
+          <span style={{ color: '#91cfb1' }}>Test Role Permissions:</span>
+          <button
+            type="button"
+            className={`badge ${user.role === 'admin' ? 'badge-positive' : 'badge-neutral'}`}
+            style={{ cursor: 'pointer', border: 0 }}
+            onClick={() => onRoleSwitch?.('admin')}
+          >
+            Admin (Full Access)
+          </button>
+          <button
+            type="button"
+            className={`badge ${user.role === 'viewer' ? 'badge-warning' : 'badge-neutral'}`}
+            style={{ cursor: 'pointer', border: 0 }}
+            onClick={() => onRoleSwitch?.('viewer')}
+          >
+            Viewer (Freelancer Restricted)
+          </button>
+        </div>
+      </div>
+
       <div className="page-intro">
         <div>
           <p className="eyebrow">Client Portfolio</p>
@@ -103,12 +156,14 @@ export function Clients() {
             Track performance, permissions, and GA4 property bindings across each account.
           </p>
         </div>
-        <Button onClick={() => setShowInvite((v) => !v)}>
-          {showInvite ? 'Close Form' : '+ Add Client Account'}
-        </Button>
+        {!isViewer && (
+          <Button onClick={() => setShowInvite((v) => !v)}>
+            {showInvite ? 'Close Form' : '+ Add Client Account'}
+          </Button>
+        )}
       </div>
 
-      {showInvite && (
+      {showInvite && !isViewer && (
         <Card className="invite-card" title="Add / Invite New Client">
           <form className="invite-form" onSubmit={handleCreateClient}>
             <Input
@@ -221,6 +276,8 @@ export function Clients() {
                     <select
                       className="permission-select"
                       value={client.role}
+                      disabled={isViewer}
+                      title={isViewer ? 'Only Admins can change client role permissions' : undefined}
                       onChange={(e) =>
                         handleRoleChange(client.id, e.target.value as 'admin' | 'editor' | 'viewer')
                       }
@@ -241,22 +298,24 @@ export function Clients() {
                       </Button>
                     )}
 
-                    <button
-                      type="button"
-                      style={{
-                        border: 0,
-                        background: 'transparent',
-                        color: 'var(--coral)',
-                        cursor: 'pointer',
-                        padding: '4px 8px',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                      }}
-                      onClick={() => handleDeleteClient(client.id)}
-                      title="Remove client"
-                    >
-                      Delete
-                    </button>
+                    {!isViewer && (
+                      <button
+                        type="button"
+                        style={{
+                          border: 0,
+                          background: 'transparent',
+                          color: 'var(--coral)',
+                          cursor: 'pointer',
+                          padding: '4px 8px',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                        }}
+                        onClick={() => handleDeleteClient(client.id)}
+                        title="Remove client"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </div>
               );

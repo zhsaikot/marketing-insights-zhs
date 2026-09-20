@@ -44,7 +44,7 @@ export function Topbar({ title, user, onProfile, onLogout, onExport }: TopbarPro
         <p className="breadcrumb">Workspace / {title}</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <h1>{title}</h1>
-          {user.role === 'agency' && clients.length > 0 && (
+          {user.role === 'admin' && clients.length > 0 && (
             <select
               className="select"
               value={activeId}

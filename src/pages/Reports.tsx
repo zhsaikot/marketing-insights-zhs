@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -9,14 +9,23 @@ import {
   downloadReportCsv,
 } from '../utils/reports';
 import { getStoredClients } from '../utils/clients';
-import type { ReportEntity } from '../types';
+import { fetchAnalyticsReport } from '../utils/analytics';
+import { generateDynamicPdfReport } from '../utils/pdf-generator';
+import type { ReportEntity, AuthUser } from '../types';
 
-export function Reports() {
+interface ReportsProps {
+  user: AuthUser;
+}
+
+export function Reports({ user }: ReportsProps) {
+  const isViewer = user.role === 'viewer';
+
   const [reports, setReports] = useState<ReportEntity[]>(getStoredReports);
   const clients = getStoredClients();
 
   const [showCreate, setShowCreate] = useState(false);
   const [viewReport, setViewReport] = useState<ReportEntity | null>(null);
+  const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
 
   // Form state
   const [title, setTitle] = useState('');
@@ -26,6 +35,7 @@ export function Reports() {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isViewer) return;
     if (!title.trim()) return;
 
     const client = clients.find((c) => c.id === clientId) || clients[0];
@@ -44,6 +54,8 @@ export function Reports() {
         conversions: client ? client.monthlyConversions : '2,640',
         activeUsers: '62,100',
         avgDuration: '2m 54s',
+        spend: '$4,850',
+        roas: '3.9x',
       },
     };
 
@@ -55,6 +67,7 @@ export function Reports() {
   };
 
   const handleDelete = (reportId: string) => {
+    if (isViewer) return;
     const updated = reports.filter((r) => r.id !== reportId);
     setReports(updated);
     saveStoredReports(updated);
@@ -63,26 +76,43 @@ export function Reports() {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handleDownloadLivePdf = async (report: ReportEntity) => {
+    setGeneratingPdf(report.id);
+    try {
+      const liveData = await fetchAnalyticsReport('30d');
+      generateDynamicPdfReport(report, liveData);
+    } catch (err) {
+      console.error('Error fetching live data for PDF:', err);
+      generateDynamicPdfReport(report, null);
+    } finally {
+      setGeneratingPdf(null);
+    }
   };
 
   return (
     <div className="page-content">
       <div className="page-intro">
         <div>
-          <p className="eyebrow">Shareable Intelligence</p>
-          <h2>Reports & Executive Summaries</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span className="eyebrow" style={{ margin: 0 }}>Automated Reporting Suite</span>
+            <Badge tone={isViewer ? 'warning' : 'positive'}>
+              {isViewer ? 'Role: Viewer (Export Only)' : 'Role: Admin'}
+            </Badge>
+          </div>
+          <h2>Performance Reports & Audits</h2>
           <p className="muted">
-            Create, view, and export formatted performance audits and client deliverables.
+            Generate vector PDF deliverables and CSV audits powered by live multi-channel metrics.
           </p>
         </div>
-        <Button onClick={() => setShowCreate((v) => !v)}>
-          {showCreate ? 'Cancel' : '+ Create New Report'}
-        </Button>
+
+        {!isViewer && (
+          <Button onClick={() => setShowCreate((v) => !v)}>
+            {showCreate ? 'Cancel' : '+ Create New Report'}
+          </Button>
+        )}
       </div>
 
-      {showCreate && (
+      {showCreate && !isViewer && (
         <Card className="invite-card" title="Generate New Performance Report">
           <form className="invite-form" onSubmit={handleCreate}>
             <Input
@@ -129,7 +159,7 @@ export function Reports() {
       {/* Reports List */}
       <Card>
         <div className="simple-list">
-          {reports.map((report, index) => (
+          {reports.map((report) => (
             <div className="simple-row" key={report.id} style={{ alignItems: 'center' }}>
               <div className="report-icon">{report.type.slice(0, 3).toUpperCase()}</div>
 
@@ -146,28 +176,37 @@ export function Reports() {
               </div>
 
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <Button
+                  onClick={() => handleDownloadLivePdf(report)}
+                  disabled={generatingPdf === report.id}
+                  title="Generate dynamic PDF with live GA4, GSC, and Meta metrics"
+                >
+                  {generatingPdf === report.id ? 'Generating...' : '📄 Download PDF'}
+                </Button>
                 <Button variant="secondary" onClick={() => setViewReport(report)}>
-                  View Report
+                  Preview
                 </Button>
                 <Button variant="ghost" onClick={() => downloadReportCsv(report)} title="Download CSV">
                   CSV
                 </Button>
-                <button
-                  type="button"
-                  style={{
-                    border: 0,
-                    background: 'transparent',
-                    color: 'var(--coral)',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    padding: '4px',
-                  }}
-                  onClick={() => handleDelete(report.id)}
-                  title="Delete Report"
-                >
-                  Delete
-                </button>
+                {!isViewer && (
+                  <button
+                    type="button"
+                    style={{
+                      border: 0,
+                      background: 'transparent',
+                      color: 'var(--coral)',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      padding: '4px',
+                    }}
+                    onClick={() => handleDelete(report.id)}
+                    title="Delete Report"
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -192,7 +231,7 @@ export function Reports() {
           <div
             className="card"
             style={{
-              width: 'min(100%, 780px)',
+              width: 'min(100%, 800px)',
               maxHeight: '90vh',
               overflowY: 'auto',
               background: '#fff',
@@ -247,10 +286,8 @@ export function Reports() {
                 Executive Key Takeaways
               </strong>
               <p style={{ margin: 0, fontSize: '13px', color: 'var(--ink)', lineHeight: 1.6 }}>
-                Organic performance demonstrated strong upward momentum during this period.
-                Non-brand search visibility improved by 18.4%, while conversion volume expanded to{' '}
-                <strong>{viewReport.metricsSummary.conversions}</strong> total conversions.
-                Engagement duration remained consistent across desktop and mobile visitor cohorts.
+                Multi-channel metrics demonstrate sustained performance.
+                Organic query visibility improved by 18.4% across Search Console queries, while Meta ad spend delivered a strong 3.9x ROAS return.
               </p>
             </div>
 
@@ -264,7 +301,7 @@ export function Reports() {
               }}
             >
               <div className="card" style={{ padding: '14px', textAlign: 'center' }}>
-                <span className="eyebrow" style={{ margin: 0 }}>Sessions</span>
+                <span className="eyebrow" style={{ margin: 0 }}>Organic Sessions</span>
                 <strong style={{ fontSize: '20px', display: 'block', marginTop: '6px' }}>
                   {viewReport.metricsSummary.sessions}
                 </strong>
@@ -275,21 +312,21 @@ export function Reports() {
                 <strong style={{ fontSize: '20px', display: 'block', marginTop: '6px' }}>
                   {viewReport.metricsSummary.conversions}
                 </strong>
-                <span className="trend trend-up" style={{ fontSize: '10px' }}>+12.2%</span>
+                <span className="trend trend-up" style={{ fontSize: '10px' }}>+14.2%</span>
               </div>
               <div className="card" style={{ padding: '14px', textAlign: 'center' }}>
                 <span className="eyebrow" style={{ margin: 0 }}>Active Users</span>
                 <strong style={{ fontSize: '20px', display: 'block', marginTop: '6px' }}>
                   {viewReport.metricsSummary.activeUsers}
                 </strong>
-                <span className="trend trend-up" style={{ fontSize: '10px' }}>+15.7%</span>
+                <span className="trend trend-up" style={{ fontSize: '10px' }}>+16.7%</span>
               </div>
               <div className="card" style={{ padding: '14px', textAlign: 'center' }}>
-                <span className="eyebrow" style={{ margin: 0 }}>Avg Duration</span>
+                <span className="eyebrow" style={{ margin: 0 }}>Meta ROAS</span>
                 <strong style={{ fontSize: '20px', display: 'block', marginTop: '6px' }}>
-                  {viewReport.metricsSummary.avgDuration}
+                  {viewReport.metricsSummary.roas || '3.9x'}
                 </strong>
-                <span className="trend trend-neutral" style={{ fontSize: '10px' }}>Steady</span>
+                <span className="trend trend-up" style={{ fontSize: '10px' }}>Spend: {viewReport.metricsSummary.spend || '$4,850'}</span>
               </div>
             </div>
 
@@ -307,28 +344,28 @@ export function Reports() {
                 </thead>
                 <tbody>
                   <tr style={{ borderBottom: '1px solid #edf1ef' }}>
-                    <td style={{ padding: '10px 0' }}><strong>Organic Search</strong></td>
+                    <td style={{ padding: '10px 0' }}><strong>Organic Search (GA4 + GSC)</strong></td>
                     <td style={{ padding: '10px 0' }}>54.2%</td>
                     <td style={{ padding: '10px 0' }}>3.8%</td>
-                    <td style={{ padding: '10px 0' }}><span className="trend trend-up">+14%</span></td>
+                    <td style={{ padding: '10px 0' }}><span className="trend trend-up">+18%</span></td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid #edf1ef' }}>
-                    <td style={{ padding: '10px 0' }}><strong>Direct</strong></td>
-                    <td style={{ padding: '10px 0' }}>22.1%</td>
-                    <td style={{ padding: '10px 0' }}>2.9%</td>
-                    <td style={{ padding: '10px 0' }}><span className="trend trend-up">+4%</span></td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid #edf1ef' }}>
-                    <td style={{ padding: '10px 0' }}><strong>Referral & Social</strong></td>
-                    <td style={{ padding: '10px 0' }}>14.7%</td>
+                    <td style={{ padding: '10px 0' }}><strong>Paid Social (Meta Ads)</strong></td>
+                    <td style={{ padding: '10px 0' }}>24.1%</td>
                     <td style={{ padding: '10px 0' }}>4.2%</td>
-                    <td style={{ padding: '10px 0' }}><span className="trend trend-up">+8%</span></td>
+                    <td style={{ padding: '10px 0' }}><span className="trend trend-up">3.9x ROAS</span></td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #edf1ef' }}>
+                    <td style={{ padding: '10px 0' }}><strong>Direct Traffic</strong></td>
+                    <td style={{ padding: '10px 0' }}>13.5%</td>
+                    <td style={{ padding: '10px 0' }}>2.9%</td>
+                    <td style={{ padding: '10px 0' }}><span className="trend trend-neutral">Steady</span></td>
                   </tr>
                   <tr>
-                    <td style={{ padding: '10px 0' }}><strong>Email & Other</strong></td>
-                    <td style={{ padding: '10px 0' }}>9.0%</td>
+                    <td style={{ padding: '10px 0' }}><strong>Referral & Partner Channels</strong></td>
+                    <td style={{ padding: '10px 0' }}>8.2%</td>
                     <td style={{ padding: '10px 0' }}>5.1%</td>
-                    <td style={{ padding: '10px 0' }}><span className="trend trend-neutral">0%</span></td>
+                    <td style={{ padding: '10px 0' }}><span className="trend trend-up">+8%</span></td>
                   </tr>
                 </tbody>
               </table>
@@ -348,11 +385,11 @@ export function Reports() {
                 Client Deliverable Document
               </span>
               <div style={{ display: 'flex', gap: '10px' }}>
+                <Button onClick={() => handleDownloadLivePdf(viewReport)}>
+                  📄 Download Live PDF
+                </Button>
                 <Button variant="secondary" onClick={() => downloadReportCsv(viewReport)}>
                   Download CSV
-                </Button>
-                <Button onClick={handlePrint}>
-                  Print / Save as PDF
                 </Button>
                 <Button variant="ghost" onClick={() => setViewReport(null)}>
                   Close

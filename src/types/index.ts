@@ -1,6 +1,6 @@
 export type Page = 'dashboard' | 'clients' | 'integrations' | 'reports' | 'profile';
 
-export type UserRole = 'agency' | 'client';
+export type UserRole = 'admin' | 'editor' | 'viewer';
 
 export interface AuthUser {
   name: string;
@@ -27,6 +27,8 @@ export interface KeywordRow {
   traffic: string;
   change: number;
   intent?: 'commercial' | 'informational' | 'navigational' | 'transactional';
+  clicks?: number;
+  impressions?: number;
 }
 
 export type DateRangeKey = '7d' | '30d' | '90d' | '12m';
@@ -57,5 +59,33 @@ export interface ReportEntity {
     conversions: string;
     activeUsers: string;
     avgDuration: string;
+    spend?: string;
+    roas?: string;
   };
+}
+
+export interface OAuthTokenInfo {
+  provider: 'google' | 'meta';
+  accessToken: string;
+  refreshToken?: string;
+  account?: string;
+  expiresAt?: number;
+  scopes?: string[];
+  connectedAt: string;
+}
+
+export interface MetaAdMetrics {
+  spend: string;
+  impressions: string;
+  clicks: string;
+  roas: string;
+  cpc: string;
+  conversions: string;
+}
+
+export interface GscMetrics {
+  totalClicks: number;
+  totalImpressions: number;
+  avgCtr: string;
+  avgPosition: string;
 }
