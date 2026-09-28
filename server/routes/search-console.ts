@@ -1,19 +1,17 @@
+import { Router, Request, Response } from 'express';
 import { google } from 'googleapis';
 
-export default async (request: Request) => {
-  if (request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
-  }
+const router = Router();
 
+router.post('/', async (req: Request, res: Response) => {
   try {
-    const body = (await request.json()) as {
+    const { siteUrl, token } = req.body as {
       siteUrl?: string;
       token?: string;
       range?: string;
     };
 
-    const siteUrl = body.siteUrl || 'https://acmecommerce.io';
-    const token = body.token;
+    const targetSiteUrl = siteUrl || 'https://acmecommerce.io';
 
     // If real Google OAuth token is provided
     if (token && !token.startsWith('mock_')) {
@@ -21,8 +19,8 @@ export default async (request: Request) => {
       oauth2Client.setCredentials({ access_token: token });
 
       const searchconsole = google.searchconsole({ version: 'v1', auth: oauth2Client });
-      const res = await searchconsole.searchanalytics.query({
-        siteUrl,
+      const response = await searchconsole.searchanalytics.query({
+        siteUrl: targetSiteUrl,
         requestBody: {
           startDate: '30daysAgo',
           endDate: 'yesterday',
@@ -31,28 +29,25 @@ export default async (request: Request) => {
         },
       });
 
-      const rows = res.data.rows || [];
+      const rows = response.data.rows || [];
       const keywords = rows.map((r) => ({
         keyword: r.keys?.[0] || 'unknown query',
         position: Math.round(r.position || 0),
         clicks: r.clicks || 0,
         impressions: r.impressions || 0,
         volume: `${((r.impressions || 0) * 1.5).toLocaleString()}`,
-        traffic: `${(((r.clicks || 0) / (res.data.rows?.reduce((sum, item) => sum + (item.clicks || 0), 0) || 1)) * 100).toFixed(1)}%`,
-        change: Math.round((Math.random() * 4) - 1.5),
+        traffic: `${(((r.clicks || 0) / (response.data.rows?.reduce((sum, item) => sum + (item.clicks || 0), 0) || 1)) * 100).toFixed(1)}%`,
+        change: Math.round(Math.random() * 4 - 1.5),
         intent: 'commercial' as const,
       }));
 
-      return new Response(
-        JSON.stringify({
-          source: 'live_gsc',
-          siteUrl,
-          totalClicks: rows.reduce((s, r) => s + (r.clicks || 0), 0),
-          totalImpressions: rows.reduce((s, r) => s + (r.impressions || 0), 0),
-          keywords,
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
+      return res.json({
+        source: 'live_gsc',
+        siteUrl: targetSiteUrl,
+        totalClicks: rows.reduce((s, r) => s + (r.clicks || 0), 0),
+        totalImpressions: rows.reduce((s, r) => s + (r.impressions || 0), 0),
+        keywords,
+      });
     }
 
     // High-fidelity fallback / Sandbox mode queries
@@ -66,24 +61,19 @@ export default async (request: Request) => {
       { keyword: 'content cluster ranking strategy', position: 6, volume: '4,900', traffic: '5.1%', change: -2, intent: 'informational' },
     ];
 
-    return new Response(
-      JSON.stringify({
-        source: 'sandbox_gsc',
-        siteUrl,
-        totalClicks: 4920,
-        totalImpressions: 89400,
-        avgCtr: '5.5%',
-        avgPosition: '3.4',
-        keywords: fallbackKeywords,
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return res.json({
+      source: 'sandbox_gsc',
+      siteUrl: targetSiteUrl,
+      totalClicks: 4920,
+      totalImpressions: 89400,
+      avgCtr: '5.5%',
+      avgPosition: '3.4',
+      keywords: fallbackKeywords,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to query Search Console';
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return res.status(500).json({ error: message });
   }
-};
+});
 
+export default router;

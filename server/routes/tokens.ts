@@ -1,5 +1,8 @@
+import { Router, Request, Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
+
+const router = Router();
 
 export interface StoredToken {
   provider: 'google' | 'meta';
@@ -88,74 +91,58 @@ async function writeTokensToCloudOrDisk(tokens: Record<string, StoredToken>): Pr
   Object.assign(memoryVault, tokens);
 }
 
-export default async (request: Request) => {
-  const method = request.method;
-  const url = new URL(request.url);
-  const provider = url.searchParams.get('provider') as 'google' | 'meta' | null;
-
+router.get('/', async (req: Request, res: Response) => {
+  const provider = req.query.provider as 'google' | 'meta' | undefined;
   try {
-    if (method === 'GET') {
-      const tokens = await readTokensFromCloudOrDisk();
-      if (provider) {
-        return new Response(JSON.stringify(tokens[provider] || null), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-      return new Response(JSON.stringify(tokens), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    const tokens = await readTokensFromCloudOrDisk();
+    if (provider) {
+      return res.json(tokens[provider] || null);
     }
-
-    if (method === 'POST') {
-      const payload = (await request.json()) as StoredToken;
-      if (!payload.provider || !payload.accessToken) {
-        return new Response(
-          JSON.stringify({ error: 'Missing required provider or accessToken.' }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
-
-      const tokens = await readTokensFromCloudOrDisk();
-      tokens[payload.provider] = {
-        ...payload,
-        connectedAt: payload.connectedAt || new Date().toISOString(),
-      };
-      await writeTokensToCloudOrDisk(tokens);
-
-      return new Response(JSON.stringify({ success: true, token: tokens[payload.provider] }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    if (method === 'DELETE') {
-      if (!provider) {
-        return new Response(JSON.stringify({ error: 'Provider parameter required.' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-
-      const tokens = await readTokensFromCloudOrDisk();
-      delete tokens[provider];
-      delete memoryVault[provider];
-      await writeTokensToCloudOrDisk(tokens);
-
-      return new Response(JSON.stringify({ success: true, message: `${provider} token deleted.` }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
+    return res.json(tokens);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Server token error';
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return res.status(500).json({ error: message });
   }
-};
+});
 
+router.post('/', async (req: Request, res: Response) => {
+  try {
+    const payload = req.body as StoredToken;
+    if (!payload.provider || !payload.accessToken) {
+      return res.status(400).json({ error: 'Missing required provider or accessToken.' });
+    }
+
+    const tokens = await readTokensFromCloudOrDisk();
+    tokens[payload.provider] = {
+      ...payload,
+      connectedAt: payload.connectedAt || new Date().toISOString(),
+    };
+    await writeTokensToCloudOrDisk(tokens);
+
+    return res.json({ success: true, token: tokens[payload.provider] });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Server token error';
+    return res.status(500).json({ error: message });
+  }
+});
+
+router.delete('/', async (req: Request, res: Response) => {
+  try {
+    const provider = req.query.provider as 'google' | 'meta' | undefined;
+    if (!provider) {
+      return res.status(400).json({ error: 'Provider parameter required.' });
+    }
+
+    const tokens = await readTokensFromCloudOrDisk();
+    delete tokens[provider];
+    delete memoryVault[provider];
+    await writeTokensToCloudOrDisk(tokens);
+
+    return res.json({ success: true, message: `${provider} token deleted.` });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Server token error';
+    return res.status(500).json({ error: message });
+  }
+});
+
+export default router;

@@ -1,19 +1,29 @@
 {
   "dependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "concurrently": "^10.0.5",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.4",
+    "express": "^5.2.1",
     "googleapis": "^181.0.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.46.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "react-router-dom": "^7.18.4"
+    "react-router-dom": "^7.18.4",
+    "tsx": "^4.23.15"
   },
   "name": "marketing-insghts-zhs",
   "version": "1.0.0",
   "description": "To make it easy for you to get started with GitLab, here's a list of recommended next steps.",
   "main": "index.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -k -p \"[{name}]\" -n \"server,client\" -c \"cyan.bold,green.bold\" \"npm run server:dev\" \"npm run client:dev\"",
+    "client:dev": "vite",
+    "server:dev": "tsx watch server/index.ts",
+    "server": "tsx server/index.ts",
     "build": "vite build",
     "preview": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1"
