@@ -201,7 +201,7 @@ export async function fetchAnalyticsReport(range: DateRangeKey = '30d', forceDem
       return getDemoReport(range);
     }
 
-    const points = gaData?.traffic?.points || [420, 510, 680, 740, 890, 1020, 1140, 1280];
+    const points = gaData?.traffic?.points || [620, 540, 780, 710, 920, 860, 1090, 1160];
     const sum = points.reduce((a: number, b: number) => a + b, 0);
 
     const keywords: KeywordRow[] = gscData?.keywords?.length
