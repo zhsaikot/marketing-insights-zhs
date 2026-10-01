@@ -79,3 +79,9 @@ export function setActiveClientId(id: string): void {
   localStorage.setItem(ACTIVE_CLIENT_KEY, id);
 }
 
+export function getActiveClient(): ClientEntity {
+  const clients = getStoredClients();
+  const activeId = getActiveClientId();
+  return clients.find((c) => c.id === activeId) || clients[0] || initialClients[0];
+}
+

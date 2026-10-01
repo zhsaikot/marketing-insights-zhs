@@ -4,6 +4,7 @@ import { AppLayout } from './components/layout/AppLayout';
 import { useAuth } from './hooks/useAuth';
 import { Clients } from './pages/Clients';
 import { Dashboard } from './pages/Dashboard';
+import { Performance } from './pages/Performance';
 import { Integrations } from './pages/Integrations';
 import { Profile } from './pages/Profile';
 import { Reports } from './pages/Reports';
@@ -39,7 +40,7 @@ function AppRoutes() {
 
   // Derive current page identifier from pathname
   const path = location.pathname.replace(/^\//, '') || 'dashboard';
-  const validPages: Page[] = ['dashboard', 'clients', 'integrations', 'reports', 'profile'];
+  const validPages: Page[] = ['dashboard', 'performance', 'clients', 'integrations', 'reports', 'profile'];
   const currentPage: Page = validPages.includes(path as Page) ? (path as Page) : 'dashboard';
 
   const handleNavigate = (target: Page) => {
@@ -56,6 +57,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/dashboard" element={<Navigate to="/" replace />} />
+        <Route path="/performance" element={<Performance />} />
         <Route
           path="/clients"
           element={<Clients user={auth.user} onRoleSwitch={auth.switchRole} />}

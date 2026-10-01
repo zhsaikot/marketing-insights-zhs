@@ -42,7 +42,7 @@ export function useAuth() {
       if (!user) return;
       startSession({ ...user, verified: true });
     },
-    updateProfile: (updates: Pick<AuthUser, 'name' | 'company'>) => {
+    updateProfile: (updates: Partial<AuthUser>) => {
       if (!user) return;
       startSession({ ...user, ...updates });
     },

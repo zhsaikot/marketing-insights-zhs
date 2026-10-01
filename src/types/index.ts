@@ -1,4 +1,4 @@
-export type Page = 'dashboard' | 'clients' | 'integrations' | 'reports' | 'profile';
+export type Page = 'dashboard' | 'clients' | 'integrations' | 'reports' | 'profile' | 'performance';
 
 export type UserRole = 'admin' | 'editor' | 'viewer';
 
@@ -8,6 +8,7 @@ export interface AuthUser {
   role: UserRole;
   company: string;
   verified: boolean;
+  avatar?: string;
 }
 
 export type Trend = 'up' | 'down' | 'neutral';
@@ -89,3 +90,68 @@ export interface GscMetrics {
   avgCtr: string;
   avgPosition: string;
 }
+
+export interface CoreWebVitalMetric {
+  id: string;
+  name: string;
+  acronym: string;
+  value: string;
+  numericValue: number;
+  score: number;
+  status: 'good' | 'needs-improvement' | 'poor';
+  thresholdText: string;
+  description: string;
+}
+
+export interface AuditOpportunity {
+  id: string;
+  title: string;
+  description: string;
+  displayValue?: string;
+  savingsMs?: number;
+  savingsBytes?: number;
+  score: number;
+}
+
+export interface PageSpeedReport {
+  url: string;
+  finalUrl: string;
+  strategy: 'mobile' | 'desktop';
+  performanceScore: number;
+  timestamp: string;
+  fetchTime: number;
+  cached: boolean;
+  cacheExpiresAt: number;
+  cacheAgeMinutes?: number;
+  cacheRemainingMinutes?: number;
+  stale?: boolean;
+  simulated?: boolean;
+  coreWebVitals: {
+    lcp: CoreWebVitalMetric;
+    cls: CoreWebVitalMetric;
+    fcp: CoreWebVitalMetric;
+    ttfb: CoreWebVitalMetric;
+    tbt: CoreWebVitalMetric;
+    inp?: CoreWebVitalMetric;
+    speedIndex?: CoreWebVitalMetric;
+  };
+  opportunities: AuditOpportunity[];
+  diagnostics: AuditOpportunity[];
+}
+
+export interface PageSpeedSummary {
+  url: string;
+  mobile: {
+    score: number;
+    lcp?: CoreWebVitalMetric;
+    cls?: CoreWebVitalMetric;
+  };
+  desktop: {
+    score: number;
+    lcp?: CoreWebVitalMetric;
+    cls?: CoreWebVitalMetric;
+  };
+  lastChecked: string;
+  cached: boolean;
+}
+

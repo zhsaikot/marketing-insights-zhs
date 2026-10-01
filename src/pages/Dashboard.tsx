@@ -4,8 +4,7 @@ import { TrafficChart } from '../components/dashboard/TrafficChart';
 import { InsightsPanel } from '../components/dashboard/InsightsPanel';
 import { KeywordsTable } from '../components/dashboard/KeywordsTable';
 import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
-import { Button } from '../components/ui/Button';
+import { Download, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
 import {
   fetchAnalyticsReport,
   isDemoModeActive,
@@ -13,6 +12,9 @@ import {
   type AnalyticsReport,
 } from '../utils/analytics';
 import type { DateRangeKey } from '../types';
+import { generateDynamicPdfReport } from '../utils/pdf-generator';
+import { getStoredClients, getActiveClientId } from '../utils/clients';
+import { PageSpeedWidget } from '../components/dashboard/PageSpeedWidget';
 
 export function Dashboard() {
   const [report, setReport] = useState<AnalyticsReport | null>(null);
@@ -45,111 +47,179 @@ export function Dashboard() {
     setDemoModeActive(demoState);
   };
 
+  const handleDownloadPdf = () => {
+    const clients = getStoredClients();
+    const activeId = getActiveClientId();
+    const activeClient = clients.find((c) => c.id === activeId) || clients[0];
+
+    generateDynamicPdfReport(
+      {
+        id: `dashboard-export-${Date.now()}`,
+        title: 'Executive Performance Summary',
+        type: 'Executive Summary',
+        clientId: activeClient?.id || 'client-1',
+        clientName: activeClient?.name || 'Acme Commerce',
+        createdAt: new Date().toISOString().split('T')[0],
+        dateRange: report?.dateRangeLabel || 'Last 30 days',
+        status: 'ready',
+        metricsSummary: {
+          sessions: report?.metrics[0]?.value || '142,500',
+          conversions: report?.metrics[1]?.value || '4,890',
+          activeUsers: report?.metrics[2]?.value || '108,300',
+          avgDuration: '2m 45s',
+        },
+      },
+      report
+    );
+  };
+
+  const handleExportCsv = () => {
+    if (!report) return;
+    const rows = [
+      ['Metric', 'Value', 'Change', 'Trend'],
+      ...report.metrics.map((m) => [m.label, m.value, m.change, m.trend]),
+      [],
+      ['Top Keywords', 'Position', 'Clicks', 'Impressions', 'Traffic Share', 'Intent'],
+      ...report.keywords.map((k) => [
+        k.keyword,
+        k.position.toString(),
+        (k.clicks || 0).toString(),
+        (k.impressions || 0).toString(),
+        k.traffic,
+        k.intent,
+      ]),
+    ];
+
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      rows.map((e) => e.map((val) => `"${val}"`).join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `marketing-insights-${dateRange}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const hasGoogle = Boolean(report?.tokens?.google);
   const hasMeta = Boolean(report?.tokens?.meta);
 
   return (
     <div className="page-content">
-      {/* Live Pipeline Status Header */}
+      {/* Top Page Intro Header (Sociafy Style) */}
+      <div className="page-intro">
+        <div>
+          <h2>Social & Omnichannel Analytics</h2>
+          <p className="muted">
+            Track performance, engagement, and growth across all your marketing channels in one unified place.
+          </p>
+        </div>
+
+        {/* Top Right Actions (Sociafy Export & Primary Action Button) */}
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={handleExportCsv}
+            title="Download metrics as CSV"
+          >
+            <Download size={15} />
+            <span>Export CSV</span>
+          </button>
+
+          <button
+            type="button"
+            className="button button-primary"
+            onClick={handleDownloadPdf}
+            title="Generate executive PDF report"
+          >
+            <FileText size={15} />
+            <span>Download PDF</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Pipeline Status & Segmented Filter Bar */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          gap: '12px',
-          padding: '10px 18px',
-          background: '#fff',
-          border: '1px solid var(--line)',
-          borderRadius: '8px',
-          marginBottom: '24px',
+          gap: '16px',
+          background: 'var(--white)',
+          padding: '12px 20px',
+          borderRadius: 'var(--radius-card)',
+          boxShadow: 'var(--shadow-card)',
+          marginBottom: '22px',
           flexWrap: 'wrap',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
-            <span
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: hasGoogle || isDemo ? 'var(--green)' : 'var(--coral)',
-              }}
-            />
-            <strong>GA4 & Search Console:</strong>
-            <span style={{ color: 'var(--muted)' }}>
-              {hasGoogle ? 'Live Token Active' : isDemo ? 'Sandbox Connected' : 'Ready to Connect'}
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
-            <span
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: hasMeta || isDemo ? 'var(--green)' : 'var(--coral)',
-              }}
-            />
-            <strong>Meta Business:</strong>
-            <span style={{ color: 'var(--muted)' }}>
-              {hasMeta ? 'Live Token Active' : isDemo ? 'Sandbox Connected' : 'Ready to Connect'}
-            </span>
-          </div>
+        {/* Channel Segmented Control (Pill Switcher) */}
+        <div className="pill-segmented-control">
+          <button
+            type="button"
+            className={`pill-segmented-btn ${channelTab === 'blended' ? 'active' : ''}`}
+            onClick={() => setChannelTab('blended')}
+          >
+            All Channels
+          </button>
+          <button
+            type="button"
+            className={`pill-segmented-btn ${channelTab === 'organic' ? 'active' : ''}`}
+            onClick={() => setChannelTab('organic')}
+          >
+            Organic (GA4 + GSC)
+          </button>
+          <button
+            type="button"
+            className={`pill-segmented-btn ${channelTab === 'meta' ? 'active' : ''}`}
+            onClick={() => setChannelTab('meta')}
+          >
+            Meta Ads
+          </button>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        {/* Right Status Indicators & Timeframe */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {hasGoogle || isDemo ? (
+                <CheckCircle2 size={14} color="var(--green-accent)" />
+              ) : (
+                <AlertCircle size={14} color="var(--coral)" />
+              )}
+              <strong style={{ color: 'var(--ink)' }}>GA4 & GSC:</strong>
+              <span style={{ color: 'var(--muted)' }}>
+                {hasGoogle ? 'Live Token' : isDemo ? 'Sandbox Feed' : 'Not Connected'}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {hasMeta || isDemo ? (
+                <CheckCircle2 size={14} color="var(--green-accent)" />
+              ) : (
+                <AlertCircle size={14} color="var(--coral)" />
+              )}
+              <strong style={{ color: 'var(--ink)' }}>Meta Ads:</strong>
+              <span style={{ color: 'var(--muted)' }}>
+                {hasMeta ? 'Live Token' : isDemo ? 'Sandbox Feed' : 'Not Connected'}
+              </span>
+            </div>
+          </div>
+
           <button
             type="button"
             className={`badge ${isDemo ? 'badge-warning' : 'badge-positive'}`}
-            style={{ cursor: 'pointer', border: '1px solid var(--line)', padding: '6px 12px' }}
+            style={{ cursor: 'pointer', padding: '6px 14px', fontSize: '11px', border: 0 }}
             onClick={() => toggleDemo(!isDemo)}
           >
             {isDemo ? '✦ Demo Sandbox' : '● Live Multi-API Feed'}
           </button>
-        </div>
-      </div>
 
-      <div className="page-intro">
-        <div>
-          <p className="eyebrow">Cross-Channel Analytics</p>
-          <h2>Performance Overview</h2>
-          <p className="muted">
-            Aggregated marketing intelligence combining Google Analytics 4, Search Console, and Meta Business.
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          {/* Channel Filter Switcher */}
-          <div style={{ display: 'flex', background: 'var(--white)', border: '1px solid var(--line)', borderRadius: '6px', padding: '3px' }}>
-            <button
-              type="button"
-              className={`badge ${channelTab === 'blended' ? 'badge-positive' : ''}`}
-              style={{ border: 0, cursor: 'pointer', padding: '6px 12px' }}
-              onClick={() => setChannelTab('blended')}
-            >
-              All Channels
-            </button>
-            <button
-              type="button"
-              className={`badge ${channelTab === 'organic' ? 'badge-positive' : ''}`}
-              style={{ border: 0, cursor: 'pointer', padding: '6px 12px' }}
-              onClick={() => setChannelTab('organic')}
-            >
-              Organic (GA4 + GSC)
-            </button>
-            <button
-              type="button"
-              className={`badge ${channelTab === 'meta' ? 'badge-positive' : ''}`}
-              style={{ border: 0, cursor: 'pointer', padding: '6px 12px' }}
-              onClick={() => setChannelTab('meta')}
-            >
-              Meta Ads
-            </button>
-          </div>
-
-          {/* Timeframe Selector */}
+          {/* Timeframe Select Pill */}
           <select
-            className="select"
+            className="pill-select"
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value as DateRangeKey)}
             aria-label="Select Date Range"
@@ -163,64 +233,71 @@ export function Dashboard() {
       </div>
 
       {loading && (
-        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--muted)' }}>
-          <p>Loading analytics data from connected APIs...</p>
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)' }}>
+          <p>Syncing analytics across pipeline...</p>
         </div>
       )}
 
       {!loading && report && (
         <>
-          {/* Primary Metric Grid */}
+          {/* Sociafy Style 4-Column KPI Metric Cards */}
           <div className="metric-grid">
-            {report.metrics.map((metric) => (
-              <MetricCard key={metric.label} metric={metric} />
+            {report.metrics.map((metric, idx) => (
+              <MetricCard key={metric.label} metric={metric} index={idx} />
             ))}
           </div>
 
+          {/* Google PageSpeed Insights & Core Web Vitals Summary */}
+          <PageSpeedWidget />
+
           {/* Meta Ads Specific Section */}
           {channelTab === 'meta' && report.metaMetrics && (
-            <Card title="Meta Paid Campaign Performance" style={{ marginBottom: '20px' }}>
+            <Card style={{ marginBottom: '22px' }}>
+              <div className="card-header">
+                <h2>Meta Paid Campaign Performance</h2>
+                <span className="badge badge-positive">Active Campaign Feed</span>
+              </div>
               <div
                 style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(4, 1fr)',
-                  gap: '14px',
+                  gap: '16px',
                   marginBottom: '16px',
                 }}
               >
-                <div style={{ padding: '12px', background: '#f8faf9', borderRadius: '6px' }}>
+                <div style={{ padding: '16px', background: 'var(--paper-soft)', borderRadius: 'var(--radius-sm)' }}>
                   <span className="eyebrow" style={{ margin: 0 }}>Total Ad Spend</span>
-                  <strong style={{ fontSize: '20px', display: 'block', margin: '4px 0' }}>
+                  <strong style={{ fontSize: '22px', display: 'block', margin: '6px 0', color: 'var(--ink)' }}>
                     {report.metaMetrics.spend}
                   </strong>
-                  <span className="trend trend-up">+18% vs last period</span>
+                  <span className="sociafy-pill-trend up">+18.4% vs last period</span>
                 </div>
-                <div style={{ padding: '12px', background: '#f8faf9', borderRadius: '6px' }}>
+                <div style={{ padding: '16px', background: 'var(--paper-soft)', borderRadius: 'var(--radius-sm)' }}>
                   <span className="eyebrow" style={{ margin: 0 }}>Purchase ROAS</span>
-                  <strong style={{ fontSize: '20px', display: 'block', margin: '4px 0' }}>
+                  <strong style={{ fontSize: '22px', display: 'block', margin: '6px 0', color: 'var(--ink)' }}>
                     {report.metaMetrics.roas}
                   </strong>
-                  <span className="trend trend-up">Target: 3.5x</span>
+                  <span className="sociafy-pill-trend up">Target: 3.5x</span>
                 </div>
-                <div style={{ padding: '12px', background: '#f8faf9', borderRadius: '6px' }}>
+                <div style={{ padding: '16px', background: 'var(--paper-soft)', borderRadius: 'var(--radius-sm)' }}>
                   <span className="eyebrow" style={{ margin: 0 }}>Ad Clicks</span>
-                  <strong style={{ fontSize: '20px', display: 'block', margin: '4px 0' }}>
+                  <strong style={{ fontSize: '22px', display: 'block', margin: '6px 0', color: 'var(--ink)' }}>
                     {report.metaMetrics.clicks}
                   </strong>
-                  <span className="trend trend-neutral">CPC: {report.metaMetrics.cpc}</span>
+                  <span className="sociafy-pill-trend neutral">CPC: {report.metaMetrics.cpc}</span>
                 </div>
-                <div style={{ padding: '12px', background: '#f8faf9', borderRadius: '6px' }}>
+                <div style={{ padding: '16px', background: 'var(--paper-soft)', borderRadius: 'var(--radius-sm)' }}>
                   <span className="eyebrow" style={{ margin: 0 }}>Paid Conversions</span>
-                  <strong style={{ fontSize: '20px', display: 'block', margin: '4px 0' }}>
+                  <strong style={{ fontSize: '22px', display: 'block', margin: '6px 0', color: 'var(--ink)' }}>
                     {report.metaMetrics.conversions}
                   </strong>
-                  <span className="trend trend-up">+14% vs target</span>
+                  <span className="sociafy-pill-trend up">+14.2% vs target</span>
                 </div>
               </div>
             </Card>
           )}
 
-          {/* Traffic Chart & Insights Panel */}
+          {/* Traffic Chart & Insights Panel (2-Column Grid) */}
           {channelTab !== 'meta' && (
             <div className="dashboard-grid">
               <TrafficChart

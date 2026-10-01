@@ -1,8 +1,4 @@
-import { useState } from 'react';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
-import { Input } from '../components/ui/Input';
+import { useState, useMemo } from 'react';
 import {
   getStoredReports,
   saveStoredReports,
@@ -12,6 +8,22 @@ import { getStoredClients } from '../utils/clients';
 import { fetchAnalyticsReport } from '../utils/analytics';
 import { generateDynamicPdfReport } from '../utils/pdf-generator';
 import type { ReportEntity, AuthUser } from '../types';
+import {
+  FileText,
+  Download,
+  Eye,
+  Trash2,
+  Plus,
+  Calendar,
+  Building2,
+  Search,
+  CheckCircle2,
+  BarChart3,
+  TrendingUp,
+  Layers,
+  Sparkles,
+  X,
+} from 'lucide-react';
 
 interface ReportsProps {
   user: AuthUser;
@@ -27,11 +39,30 @@ export function Reports({ user }: ReportsProps) {
   const [viewReport, setViewReport] = useState<ReportEntity | null>(null);
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
 
+  // Filters & Search
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedType, setSelectedType] = useState<string>('all');
+
   // Form state
   const [title, setTitle] = useState('');
   const [clientId, setClientId] = useState(clients[0]?.id || 'client-1');
   const [reportType, setReportType] = useState<ReportEntity['type']>('Executive Summary');
   const [dateRange, setDateRange] = useState('Last 30 Days (Aug 20 - Sep 19, 2026)');
+
+  const filteredReports = useMemo(() => {
+    return reports.filter((r) => {
+      const matchesSearch =
+        searchQuery === '' ||
+        r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.type.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesType =
+        selectedType === 'all' || r.type.toLowerCase() === selectedType.toLowerCase();
+
+      return matchesSearch && matchesType;
+    });
+  }, [reports, searchQuery, selectedType]);
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,153 +120,453 @@ export function Reports({ user }: ReportsProps) {
     }
   };
 
+  const getReportTheme = (type: string) => {
+    switch (type) {
+      case 'Executive Summary':
+        return { class: 'executive', icon: FileText, color: 'var(--green)' };
+      case 'SEO Performance':
+        return { class: 'seo', icon: TrendingUp, color: 'var(--purple)' };
+      case 'Channel Attribution':
+        return { class: 'channel', icon: Layers, color: 'var(--blue)' };
+      default:
+        return { class: 'monthly', icon: Calendar, color: 'var(--yellow)' };
+    }
+  };
+
   return (
     <div className="page-content">
+      {/* Top Page Intro Header (Sociafy Style) */}
       <div className="page-intro">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <span className="eyebrow" style={{ margin: 0 }}>Automated Reporting Suite</span>
-            <Badge tone={isViewer ? 'warning' : 'positive'}>
-              {isViewer ? 'Role: Viewer (Export Only)' : 'Role: Admin'}
-            </Badge>
-          </div>
-          <h2>Performance Reports & Audits</h2>
+          <h2>Executive Reports & Audits</h2>
           <p className="muted">
-            Generate vector PDF deliverables and CSV audits powered by live multi-channel metrics.
+            Generate vector PDF client deliverables, export scheduled summaries, and analyze performance trends.
           </p>
         </div>
 
         {!isViewer && (
-          <Button onClick={() => setShowCreate((v) => !v)}>
-            {showCreate ? 'Cancel' : '+ Create New Report'}
-          </Button>
+          <button
+            type="button"
+            className="button button-primary"
+            onClick={() => setShowCreate(true)}
+          >
+            <Plus size={16} />
+            <span>Create New Report</span>
+          </button>
         )}
       </div>
 
-      {showCreate && !isViewer && (
-        <Card className="invite-card" title="Generate New Performance Report">
-          <form className="invite-form" onSubmit={handleCreate}>
-            <Input
-              required
-              placeholder="Report Title (e.g. Q3 Growth & Search Audit)"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              aria-label="Report Title"
-            />
-            <select
-              className="select"
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              aria-label="Select Client"
-            >
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <select
-              className="select"
-              value={reportType}
-              onChange={(e) => setReportType(e.target.value as ReportEntity['type'])}
-              aria-label="Report Type"
-            >
-              <option value="Executive Summary">Executive Summary</option>
-              <option value="SEO Performance">SEO Performance</option>
-              <option value="Channel Attribution">Channel Attribution</option>
-              <option value="Monthly Review">Monthly Review</option>
-            </select>
-            <Input
-              placeholder="Date Range description"
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-              aria-label="Date Range"
-            />
-            <Button type="submit">Generate Report</Button>
-          </form>
-        </Card>
+      {/* 4 Sociafy-Style KPI Cards for Reports Suite */}
+      <div className="reports-kpi-grid">
+        <div className="sociafy-metric-card">
+          <div className="sociafy-metric-top">
+            <h4 className="sociafy-metric-label">Generated Reports</h4>
+            <div className="sociafy-metric-badge green">
+              <FileText size={18} />
+            </div>
+          </div>
+          <div className="sociafy-metric-bottom">
+            <div className="sociafy-metric-row">
+              <span className="sociafy-metric-value">{reports.length}</span>
+              <span className="sociafy-pill-trend up">
+                <CheckCircle2 size={12} /> Active
+              </span>
+            </div>
+            <span className="sociafy-metric-sub">Client performance deliverables</span>
+          </div>
+        </div>
+
+        <div className="sociafy-metric-card">
+          <div className="sociafy-metric-top">
+            <h4 className="sociafy-metric-label">Client Coverage</h4>
+            <div className="sociafy-metric-badge purple">
+              <Building2 size={18} />
+            </div>
+          </div>
+          <div className="sociafy-metric-bottom">
+            <div className="sociafy-metric-row">
+              <span className="sociafy-metric-value">{clients.length}</span>
+              <span className="sociafy-pill-trend up">100%</span>
+            </div>
+            <span className="sociafy-metric-sub">Active brand workspaces</span>
+          </div>
+        </div>
+
+        <div className="sociafy-metric-card">
+          <div className="sociafy-metric-top">
+            <h4 className="sociafy-metric-label">PDF Vector Engine</h4>
+            <div className="sociafy-metric-badge blue">
+              <Download size={18} />
+            </div>
+          </div>
+          <div className="sociafy-metric-bottom">
+            <div className="sociafy-metric-row">
+              <span className="sociafy-metric-value">A4 Print</span>
+              <span className="sociafy-pill-trend up">Live</span>
+            </div>
+            <span className="sociafy-metric-sub">Auto-calculated KPIs & tables</span>
+          </div>
+        </div>
+
+        <div className="sociafy-metric-card">
+          <div className="sociafy-metric-top">
+            <h4 className="sociafy-metric-label">Audit Types</h4>
+            <div className="sociafy-metric-badge pink">
+              <BarChart3 size={18} />
+            </div>
+          </div>
+          <div className="sociafy-metric-bottom">
+            <div className="sociafy-metric-row">
+              <span className="sociafy-metric-value">4 Types</span>
+              <span className="sociafy-pill-trend neutral">SEO • Meta • Exec</span>
+            </div>
+            <span className="sociafy-metric-sub">Multi-channel cross attribution</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Modern Filter Toolbar */}
+      <div className="reports-toolbar">
+        {/* Search input with icon */}
+        <div className="reports-search-box">
+          <Search />
+          <input
+            type="text"
+            className="reports-search-input"
+            placeholder="Search reports by title or client..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        {/* Filter Pills */}
+        <div className="pill-segmented-control">
+          <button
+            type="button"
+            className={`pill-segmented-btn ${selectedType === 'all' ? 'active' : ''}`}
+            onClick={() => setSelectedType('all')}
+          >
+            All Reports ({reports.length})
+          </button>
+          <button
+            type="button"
+            className={`pill-segmented-btn ${selectedType === 'executive summary' ? 'active' : ''}`}
+            onClick={() => setSelectedType('executive summary')}
+          >
+            Executive
+          </button>
+          <button
+            type="button"
+            className={`pill-segmented-btn ${selectedType === 'seo performance' ? 'active' : ''}`}
+            onClick={() => setSelectedType('seo performance')}
+          >
+            SEO
+          </button>
+          <button
+            type="button"
+            className={`pill-segmented-btn ${selectedType === 'monthly review' ? 'active' : ''}`}
+            onClick={() => setSelectedType('monthly review')}
+          >
+            Monthly
+          </button>
+        </div>
+      </div>
+
+      {/* Empty State */}
+      {filteredReports.length === 0 && (
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '60px 20px',
+            background: 'var(--white)',
+            borderRadius: 'var(--radius-card)',
+            boxShadow: 'var(--shadow-card)',
+          }}
+        >
+          <FileText size={40} color="var(--muted-light)" style={{ marginBottom: '12px' }} />
+          <h3 style={{ margin: '0 0 6px', color: 'var(--ink)' }}>No Reports Found</h3>
+          <p className="muted" style={{ margin: 0 }}>
+            {searchQuery
+              ? `No reports matched your search query "${searchQuery}".`
+              : 'Click "+ Create New Report" to generate your first audit deliverable.'}
+          </p>
+        </div>
       )}
 
-      {/* Reports List */}
-      <Card>
-        <div className="simple-list">
-          {reports.map((report) => (
-            <div className="simple-row" key={report.id} style={{ alignItems: 'center' }}>
-              <div className="report-icon">{report.type.slice(0, 3).toUpperCase()}</div>
+      {/* Modern Sociafy-Inspired Report Cards Grid */}
+      <div className="reports-card-grid">
+        {filteredReports.map((report) => {
+          const theme = getReportTheme(report.type);
+          const Icon = theme.icon;
 
+          return (
+            <div key={report.id} className="report-item-card">
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <strong>{report.title}</strong>
-                  <Badge tone={report.type === 'Executive Summary' ? 'positive' : 'neutral'}>
-                    {report.type}
-                  </Badge>
+                {/* Card Top: Icon Badge + Title + Status */}
+                <div className="report-item-top">
+                  <div className={`report-item-icon-badge ${theme.class}`}>
+                    <Icon size={20} />
+                  </div>
+                  <div className="report-item-header">
+                    <h3 className="report-item-title">{report.title}</h3>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <span className="badge badge-neutral" style={{ fontSize: '10px' }}>
+                        {report.type}
+                      </span>
+                      <span className="badge badge-positive" style={{ fontSize: '10px' }}>
+                        ✓ Ready
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <span>
-                  Client: <strong>{report.clientName}</strong> • {report.dateRange} • Created {report.createdAt}
-                </span>
+
+                {/* Card Meta: Client & Date Range Chips */}
+                <div className="report-item-meta">
+                  <span className="report-meta-chip">
+                    <Building2 size={13} color="var(--muted)" />
+                    {report.clientName}
+                  </span>
+                  <span className="report-meta-chip">
+                    <Calendar size={13} color="var(--muted)" />
+                    {report.dateRange}
+                  </span>
+                </div>
+
+                {/* Card Metric Box (4 Mini KPIs for Depth & Texture) */}
+                <div className="report-metrics-box">
+                  <div className="report-metric-stat">
+                    <strong>{report.metricsSummary?.sessions || '142.5k'}</strong>
+                    <span>Sessions</span>
+                  </div>
+                  <div className="report-metric-stat">
+                    <strong>{report.metricsSummary?.conversions || '4.8k'}</strong>
+                    <span>Conversions</span>
+                  </div>
+                  <div className="report-metric-stat">
+                    <strong>{report.metricsSummary?.activeUsers || '108.3k'}</strong>
+                    <span>Users</span>
+                  </div>
+                  <div className="report-metric-stat">
+                    <strong style={{ color: 'var(--green)' }}>
+                      {report.metricsSummary?.roas || '3.9x'}
+                    </strong>
+                    <span>Meta ROAS</span>
+                  </div>
+                </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <Button
-                  onClick={() => handleDownloadLivePdf(report)}
-                  disabled={generatingPdf === report.id}
-                  title="Generate dynamic PDF with live GA4, GSC, and Meta metrics"
-                >
-                  {generatingPdf === report.id ? 'Generating...' : '📄 Download PDF'}
-                </Button>
-                <Button variant="secondary" onClick={() => setViewReport(report)}>
-                  Preview
-                </Button>
-                <Button variant="ghost" onClick={() => downloadReportCsv(report)} title="Download CSV">
-                  CSV
-                </Button>
+              {/* Card Actions Bottom */}
+              <div className="report-item-actions">
+                <div className="report-action-group">
+                  <button
+                    type="button"
+                    className="button button-primary"
+                    style={{ padding: '8px 16px', fontSize: '12px' }}
+                    onClick={() => handleDownloadLivePdf(report)}
+                    disabled={generatingPdf === report.id}
+                    title="Generate vector PDF with live GA4, GSC, and Meta metrics"
+                  >
+                    <Download size={14} />
+                    <span>{generatingPdf === report.id ? 'Generating...' : 'PDF'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    style={{ padding: '8px 14px', fontSize: '12px' }}
+                    onClick={() => setViewReport(report)}
+                    title="Preview report deliverable in browser"
+                  >
+                    <Eye size={14} />
+                    <span>Preview</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    style={{ padding: '8px 12px', fontSize: '12px' }}
+                    onClick={() => downloadReportCsv(report)}
+                    title="Export report dataset as CSV"
+                  >
+                    CSV
+                  </button>
+                </div>
+
                 {!isViewer && (
                   <button
                     type="button"
-                    style={{
-                      border: 0,
-                      background: 'transparent',
-                      color: 'var(--coral)',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      padding: '4px',
-                    }}
+                    className="icon-circle-btn"
+                    style={{ width: '34px', height: '34px', color: 'var(--coral)' }}
                     onClick={() => handleDelete(report.id)}
-                    title="Delete Report"
+                    title="Delete report"
+                    aria-label="Delete report"
                   >
-                    Delete
+                    <Trash2 size={14} />
                   </button>
                 )}
               </div>
             </div>
-          ))}
-        </div>
-      </Card>
+          );
+        })}
+      </div>
 
-      {/* Report Preview Modal */}
+      {/* Create Report Modern Modal Dialog */}
+      {showCreate && !isViewer && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.45)',
+            display: 'grid',
+            placeItems: 'center',
+            zIndex: 100,
+            padding: '20px',
+            backdropFilter: 'blur(4px)',
+          }}
+          onClick={() => setShowCreate(false)}
+        >
+          <div
+            className="card"
+            style={{
+              width: 'min(100%, 540px)',
+              padding: '30px',
+              borderRadius: '24px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '20px',
+                borderBottom: '1px solid var(--line)',
+                paddingBottom: '14px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div className="sociafy-metric-badge green" style={{ width: '36px', height: '36px' }}>
+                  <Sparkles size={18} />
+                </div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>
+                  Generate New Report
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="icon-circle-btn"
+                style={{ width: '32px', height: '32px' }}
+                onClick={() => setShowCreate(false)}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreate} style={{ display: 'grid', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink)' }}>
+                  Report Title
+                </label>
+                <input
+                  required
+                  className="input"
+                  style={{ width: '100%' }}
+                  placeholder="e.g. Q3 Growth & Search Console Audit"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink)' }}>
+                    Client Workspace
+                  </label>
+                  <select
+                    className="select"
+                    style={{ width: '100%' }}
+                    value={clientId}
+                    onChange={(e) => setClientId(e.target.value)}
+                  >
+                    {clients.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink)' }}>
+                    Report Type
+                  </label>
+                  <select
+                    className="select"
+                    style={{ width: '100%' }}
+                    value={reportType}
+                    onChange={(e) => setReportType(e.target.value as ReportEntity['type'])}
+                  >
+                    <option value="Executive Summary">Executive Summary</option>
+                    <option value="SEO Performance">SEO Performance</option>
+                    <option value="Channel Attribution">Channel Attribution</option>
+                    <option value="Monthly Review">Monthly Review</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink)' }}>
+                  Date Range Scope
+                </label>
+                <input
+                  className="input"
+                  style={{ width: '100%' }}
+                  value={dateRange}
+                  onChange={(e) => setDateRange(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={() => setShowCreate(false)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="button button-primary">
+                  Create Deliverable
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modern Report Preview Modal */}
       {viewReport && (
         <div
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(18, 60, 53, 0.45)',
+            background: 'rgba(15, 23, 42, 0.5)',
             display: 'grid',
             placeItems: 'center',
             zIndex: 100,
             padding: '20px',
-            backdropFilter: 'blur(3px)',
+            backdropFilter: 'blur(5px)',
           }}
           onClick={() => setViewReport(null)}
         >
           <div
             className="card"
             style={{
-              width: 'min(100%, 800px)',
+              width: 'min(100%, 820px)',
               maxHeight: '90vh',
               overflowY: 'auto',
               background: '#fff',
               padding: '36px',
+              borderRadius: '24px',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -251,43 +582,42 @@ export function Reports({ user }: ReportsProps) {
               }}
             >
               <div>
-                <span className="eyebrow">{viewReport.type} • {viewReport.clientName}</span>
-                <h2 style={{ margin: '6px 0', fontSize: '24px' }}>{viewReport.title}</h2>
-                <p className="muted" style={{ margin: 0, fontSize: '12px' }}>
-                  Period: {viewReport.dateRange} | Prepared on {viewReport.createdAt}
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                  <span className="badge badge-positive">{viewReport.type}</span>
+                  <span className="badge badge-neutral">{viewReport.clientName}</span>
+                </div>
+                <h2 style={{ margin: '4px 0 6px', fontSize: '24px', fontWeight: 800 }}>
+                  {viewReport.title}
+                </h2>
+                <p className="muted" style={{ margin: 0, fontSize: '13px' }}>
+                  Coverage: {viewReport.dateRange} • Generated on {viewReport.createdAt}
                 </p>
               </div>
               <button
                 type="button"
-                style={{
-                  border: 0,
-                  background: 'transparent',
-                  fontSize: '22px',
-                  cursor: 'pointer',
-                  color: 'var(--muted)',
-                }}
+                className="icon-circle-btn"
                 onClick={() => setViewReport(null)}
               >
-                ×
+                <X size={18} />
               </button>
             </div>
 
             {/* Executive Summary Callout */}
             <div
               style={{
-                background: '#f4f9f6',
+                background: '#ecfdf5',
                 borderLeft: '4px solid var(--green)',
-                padding: '16px',
-                borderRadius: '4px',
+                padding: '16px 20px',
+                borderRadius: 'var(--radius-sm)',
                 marginBottom: '24px',
               }}
             >
               <strong style={{ color: 'var(--green)', display: 'block', marginBottom: '4px' }}>
-                Executive Key Takeaways
+                Executive Performance Summary
               </strong>
               <p style={{ margin: 0, fontSize: '13px', color: 'var(--ink)', lineHeight: 1.6 }}>
-                Multi-channel metrics demonstrate sustained performance.
-                Organic query visibility improved by 18.4% across Search Console queries, while Meta ad spend delivered a strong 3.9x ROAS return.
+                Multi-channel metrics demonstrate strong growth trajectory.
+                Organic query visibility improved by 18.4% across Search Console queries, while Meta ad campaigns generated a solid 3.9x ROAS return.
               </p>
             </div>
 
@@ -296,76 +626,78 @@ export function Reports({ user }: ReportsProps) {
               style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(4, 1fr)',
-                gap: '12px',
+                gap: '14px',
                 marginBottom: '28px',
               }}
             >
-              <div className="card" style={{ padding: '14px', textAlign: 'center' }}>
+              <div style={{ padding: '16px', background: 'var(--paper-soft)', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
                 <span className="eyebrow" style={{ margin: 0 }}>Organic Sessions</span>
-                <strong style={{ fontSize: '20px', display: 'block', marginTop: '6px' }}>
-                  {viewReport.metricsSummary.sessions}
+                <strong style={{ fontSize: '22px', display: 'block', marginTop: '6px', color: 'var(--ink)' }}>
+                  {viewReport.metricsSummary?.sessions || '142,500'}
                 </strong>
-                <span className="trend trend-up" style={{ fontSize: '10px' }}>+18.4%</span>
+                <span className="sociafy-pill-trend up">+18.4%</span>
               </div>
-              <div className="card" style={{ padding: '14px', textAlign: 'center' }}>
+              <div style={{ padding: '16px', background: 'var(--paper-soft)', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
                 <span className="eyebrow" style={{ margin: 0 }}>Conversions</span>
-                <strong style={{ fontSize: '20px', display: 'block', marginTop: '6px' }}>
-                  {viewReport.metricsSummary.conversions}
+                <strong style={{ fontSize: '22px', display: 'block', marginTop: '6px', color: 'var(--ink)' }}>
+                  {viewReport.metricsSummary?.conversions || '4,890'}
                 </strong>
-                <span className="trend trend-up" style={{ fontSize: '10px' }}>+14.2%</span>
+                <span className="sociafy-pill-trend up">+14.2%</span>
               </div>
-              <div className="card" style={{ padding: '14px', textAlign: 'center' }}>
+              <div style={{ padding: '16px', background: 'var(--paper-soft)', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
                 <span className="eyebrow" style={{ margin: 0 }}>Active Users</span>
-                <strong style={{ fontSize: '20px', display: 'block', marginTop: '6px' }}>
-                  {viewReport.metricsSummary.activeUsers}
+                <strong style={{ fontSize: '22px', display: 'block', marginTop: '6px', color: 'var(--ink)' }}>
+                  {viewReport.metricsSummary?.activeUsers || '108,300'}
                 </strong>
-                <span className="trend trend-up" style={{ fontSize: '10px' }}>+16.7%</span>
+                <span className="sociafy-pill-trend up">+16.7%</span>
               </div>
-              <div className="card" style={{ padding: '14px', textAlign: 'center' }}>
+              <div style={{ padding: '16px', background: 'var(--paper-soft)', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
                 <span className="eyebrow" style={{ margin: 0 }}>Meta ROAS</span>
-                <strong style={{ fontSize: '20px', display: 'block', marginTop: '6px' }}>
-                  {viewReport.metricsSummary.roas || '3.9x'}
+                <strong style={{ fontSize: '22px', display: 'block', marginTop: '6px', color: 'var(--green)' }}>
+                  {viewReport.metricsSummary?.roas || '3.9x'}
                 </strong>
-                <span className="trend trend-up" style={{ fontSize: '10px' }}>Spend: {viewReport.metricsSummary.spend || '$4,850'}</span>
+                <span className="sociafy-pill-trend up">Spend: {viewReport.metricsSummary?.spend || '$4,850'}</span>
               </div>
             </div>
 
             {/* Channel Breakdown Audit */}
             <div style={{ marginBottom: '28px' }}>
-              <h3 style={{ fontSize: '15px', marginBottom: '12px' }}>Channel Acquisition Share</h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '14px', color: 'var(--ink)' }}>
+                Channel Attribution Breakdown
+              </h3>
+              <table>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid var(--line)', textAlign: 'left' }}>
-                    <th style={{ padding: '8px 0' }}>Channel</th>
-                    <th style={{ padding: '8px 0' }}>Sessions Share</th>
-                    <th style={{ padding: '8px 0' }}>Conversion Rate</th>
-                    <th style={{ padding: '8px 0' }}>Trend</th>
+                  <tr>
+                    <th>Channel</th>
+                    <th>Sessions Share</th>
+                    <th>Conversion Rate</th>
+                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr style={{ borderBottom: '1px solid #edf1ef' }}>
-                    <td style={{ padding: '10px 0' }}><strong>Organic Search (GA4 + GSC)</strong></td>
-                    <td style={{ padding: '10px 0' }}>54.2%</td>
-                    <td style={{ padding: '10px 0' }}>3.8%</td>
-                    <td style={{ padding: '10px 0' }}><span className="trend trend-up">+18%</span></td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid #edf1ef' }}>
-                    <td style={{ padding: '10px 0' }}><strong>Paid Social (Meta Ads)</strong></td>
-                    <td style={{ padding: '10px 0' }}>24.1%</td>
-                    <td style={{ padding: '10px 0' }}>4.2%</td>
-                    <td style={{ padding: '10px 0' }}><span className="trend trend-up">3.9x ROAS</span></td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid #edf1ef' }}>
-                    <td style={{ padding: '10px 0' }}><strong>Direct Traffic</strong></td>
-                    <td style={{ padding: '10px 0' }}>13.5%</td>
-                    <td style={{ padding: '10px 0' }}>2.9%</td>
-                    <td style={{ padding: '10px 0' }}><span className="trend trend-neutral">Steady</span></td>
+                  <tr>
+                    <td><strong>Organic Search (GA4 + GSC)</strong></td>
+                    <td>54.2%</td>
+                    <td>3.8%</td>
+                    <td><span className="sociafy-pill-trend up">+18% growth</span></td>
                   </tr>
                   <tr>
-                    <td style={{ padding: '10px 0' }}><strong>Referral & Partner Channels</strong></td>
-                    <td style={{ padding: '10px 0' }}>8.2%</td>
-                    <td style={{ padding: '10px 0' }}>5.1%</td>
-                    <td style={{ padding: '10px 0' }}><span className="trend trend-up">+8%</span></td>
+                    <td><strong>Paid Social (Meta Ads)</strong></td>
+                    <td>24.1%</td>
+                    <td>4.2%</td>
+                    <td><span className="sociafy-pill-trend up">3.9x ROAS</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Direct Traffic</strong></td>
+                    <td>13.5%</td>
+                    <td>2.9%</td>
+                    <td><span className="sociafy-pill-trend neutral">Steady</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Referral & Partner Channels</strong></td>
+                    <td>8.2%</td>
+                    <td>5.1%</td>
+                    <td><span className="sociafy-pill-trend up">+8%</span></td>
                   </tr>
                 </tbody>
               </table>
@@ -381,19 +713,32 @@ export function Reports({ user }: ReportsProps) {
                 paddingTop: '20px',
               }}
             >
-              <span className="muted" style={{ fontSize: '12px' }}>
-                Client Deliverable Document
+              <span className="muted" style={{ fontSize: '13px' }}>
+                Client Deliverable Ready
               </span>
               <div style={{ display: 'flex', gap: '10px' }}>
-                <Button onClick={() => handleDownloadLivePdf(viewReport)}>
-                  📄 Download Live PDF
-                </Button>
-                <Button variant="secondary" onClick={() => downloadReportCsv(viewReport)}>
-                  Download CSV
-                </Button>
-                <Button variant="ghost" onClick={() => setViewReport(null)}>
+                <button
+                  type="button"
+                  className="button button-primary"
+                  onClick={() => handleDownloadLivePdf(viewReport)}
+                >
+                  <Download size={15} />
+                  <span>Download Live PDF</span>
+                </button>
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={() => downloadReportCsv(viewReport)}
+                >
+                  Export CSV
+                </button>
+                <button
+                  type="button"
+                  className="button button-ghost"
+                  onClick={() => setViewReport(null)}
+                >
                   Close
-                </Button>
+                </button>
               </div>
             </div>
           </div>

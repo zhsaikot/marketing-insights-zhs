@@ -12,6 +12,7 @@ import authMetaRouter from './routes/auth-meta.js';
 import searchConsoleRouter from './routes/search-console.js';
 import metaAdsRouter from './routes/meta-ads.js';
 import tokensRouter from './routes/tokens.js';
+import pagespeedRouter from './routes/pagespeed.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -36,6 +37,7 @@ app.use('/api/auth-meta', authMetaRouter);
 app.use('/api/search-console', searchConsoleRouter);
 app.use('/api/meta-ads', metaAdsRouter);
 app.use('/api/tokens', tokensRouter);
+app.use('/api/pagespeed', pagespeedRouter);
 
 // Start server
 app.listen(PORT, () => {
@@ -43,11 +45,13 @@ app.listen(PORT, () => {
   const hasGoogleOAuth = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
   const hasMetaOAuth = !!(process.env.META_APP_ID && process.env.META_APP_SECRET);
   const hasUpstashRedis = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+  const hasPageSpeedKey = !!process.env.GOOGLE_PAGESPEED_API_KEY;
 
   console.log(`\n======================================================`);
   console.log(`🚀 Marketing Insights Local API Server running`);
   console.log(`📡 URL: http://localhost:${PORT}`);
   console.log(`------------------------------------------------------`);
+  console.log(`⚡ PageSpeed API:       ${hasPageSpeedKey ? '🟢 Configured (Google PSI 2h Cache)' : '⚡ Sandbox Simulation'}`);
   console.log(`📊 GA4 Data API:        ${hasGa4ServiceAccount ? '🟢 Configured (Service Account)' : '⚡ Sandbox Simulation'}`);
   console.log(`🔍 Google OAuth / GSC:  ${hasGoogleOAuth ? '🟢 Configured' : '⚡ Sandbox Simulation'}`);
   console.log(`📱 Meta Ads API:        ${hasMetaOAuth ? '🟢 Configured' : '⚡ Sandbox Simulation'}`);

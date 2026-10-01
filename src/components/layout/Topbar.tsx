@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
 import type { AuthUser } from '../../types';
 import { getStoredClients, getActiveClientId, setActiveClientId } from '../../utils/clients';
+import { Search, Bell, LogOut } from 'lucide-react';
 
 interface TopbarProps {
   title: string;
@@ -12,12 +11,11 @@ interface TopbarProps {
   onExport?: () => void;
 }
 
-export function Topbar({ title, user, onProfile, onLogout, onExport }: TopbarProps) {
+export function Topbar({ title, user, onProfile, onLogout }: TopbarProps) {
   const [clients, setClients] = useState(getStoredClients);
   const [activeId, setActiveId] = useState(getActiveClientId);
 
   useEffect(() => {
-    // Refresh client list if changed
     setClients(getStoredClients());
     setActiveId(getActiveClientId());
   }, [title]);
@@ -25,62 +23,88 @@ export function Topbar({ title, user, onProfile, onLogout, onExport }: TopbarPro
   const handleClientChange = (newId: string) => {
     setActiveId(newId);
     setActiveClientId(newId);
-    window.location.reload(); // Refresh to re-scope metrics cleanly
+    window.location.reload();
   };
-
-  const handleExport = () => {
-    if (onExport) {
-      onExport();
-    } else {
-      window.print();
-    }
-  };
-
-  const activeClient = clients.find((c) => c.id === activeId) || clients[0];
 
   return (
     <header className="topbar">
-      <div>
-        <p className="breadcrumb">Workspace / {title}</p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <h1>{title}</h1>
-          {user.role === 'admin' && clients.length > 0 && (
-            <select
-              className="select"
-              value={activeId}
-              onChange={(e) => handleClientChange(e.target.value)}
-              style={{
-                fontSize: '12px',
-                padding: '4px 8px',
-                background: '#eef5f1',
-                borderColor: 'var(--line)',
-                fontWeight: 600,
-              }}
-              aria-label="Active Client Workspace"
-            >
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  Client: {c.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
+      {/* Search Pill Input with Shortcut (Sociafy Style) */}
+      <div className="search-pill-wrapper">
+        <Search className="search-pill-icon" />
+        <input
+          type="text"
+          className="search-pill-input"
+          placeholder="Search metrics, clients, reports..."
+          aria-label="Global search"
+        />
+        <span className="search-pill-shortcut">⌘F</span>
       </div>
 
+      {/* Right Topbar Actions */}
       <div className="topbar-actions">
-        <Input placeholder="Search metrics or queries..." aria-label="Search insights" />
-        <Button variant="secondary" onClick={handleExport} title="Print or save PDF view">
-          Export / Print
-        </Button>
-        <button className="account-menu" onClick={onProfile}>
-          <div className="avatar" title="Account Settings">
-            {user.name.slice(0, 2).toUpperCase()}
-          </div>
-          <span>{user.name}</span>
+        {/* Workspace Switcher Pill */}
+        {user.role === 'admin' && clients.length > 0 && (
+          <select
+            className="pill-select"
+            value={activeId}
+            onChange={(e) => handleClientChange(e.target.value)}
+            aria-label="Active Client Workspace"
+          >
+            {clients.map((c) => (
+              <option key={c.id} value={c.id}>
+                🏢 {c.name}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {/* Quick Notification Icon Button */}
+        <button
+          type="button"
+          className="icon-circle-btn"
+          title="Notifications & Alerts"
+          aria-label="Notifications"
+        >
+          <Bell size={17} />
         </button>
-        <button className="logout-button" onClick={onLogout}>
-          Log out
+
+        {/* User Account Profile Pill (Sociafy Style) */}
+        <div
+          className="account-profile-pill"
+          onClick={onProfile}
+          title="View profile & account settings"
+          role="button"
+          tabIndex={0}
+        >
+          <div className="avatar" style={{ overflow: 'hidden' }}>
+            {user.avatar ? (
+              <img
+                src={user.avatar}
+                alt={user.name}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              user.name.slice(0, 2).toUpperCase()
+            )}
+          </div>
+          <div className="account-info">
+            <span className="account-name">{user.name}</span>
+            <span className="account-role">
+              {user.role === 'admin' ? 'Workspace Admin' : 'Client Viewer'}
+            </span>
+          </div>
+        </div>
+
+        {/* Logout Quick Button */}
+        <button
+          type="button"
+          className="icon-circle-btn"
+          onClick={onLogout}
+          title="Sign out of platform"
+          aria-label="Log out"
+          style={{ color: 'var(--coral)' }}
+        >
+          <LogOut size={16} />
         </button>
       </div>
     </header>

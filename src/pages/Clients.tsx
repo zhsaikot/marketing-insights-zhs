@@ -1,8 +1,4 @@
 import { useState, useMemo } from 'react';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
-import { Input } from '../components/ui/Input';
 import {
   getStoredClients,
   saveStoredClients,
@@ -10,6 +6,20 @@ import {
   setActiveClientId,
 } from '../utils/clients';
 import type { ClientEntity, AuthUser, UserRole } from '../types';
+import {
+  Building2,
+  CheckCircle2,
+  Activity,
+  Target,
+  Search,
+  Plus,
+  ExternalLink,
+  Trash2,
+  X,
+  Sparkles,
+  Check,
+  ShieldAlert,
+} from 'lucide-react';
 
 interface ClientsProps {
   user: AuthUser;
@@ -40,7 +50,9 @@ export function Clients({ user, onRoleSwitch }: ClientsProps) {
     const newClient: ClientEntity = {
       id: `client-${Date.now()}`,
       name: name.trim(),
-      website: website.trim().startsWith('http') ? website.trim() : `https://${website.trim() || 'example.com'}`,
+      website: website.trim().startsWith('http')
+        ? website.trim()
+        : `https://${website.trim() || 'example.com'}`,
       role,
       status: 'healthy',
       lastSynced: 'Just now',
@@ -51,14 +63,14 @@ export function Clients({ user, onRoleSwitch }: ClientsProps) {
     const updated = [newClient, ...clients];
     setClients(updated);
     saveStoredClients(updated);
-    setMessage(`Client "${name}" has been added and invitation dispatched to ${email || 'contact'}.`);
+    setMessage(`Client "${name}" has been added successfully.`);
     setName('');
     setWebsite('');
     setEmail('');
     setTimeout(() => {
       setShowInvite(false);
       setMessage(null);
-    }, 2000);
+    }, 1200);
   };
 
   const handleRoleChange = (clientId: string, newRole: 'admin' | 'editor' | 'viewer') => {
@@ -86,6 +98,7 @@ export function Clients({ user, onRoleSwitch }: ClientsProps) {
   const handleSelectWorkspace = (clientId: string) => {
     setActiveId(clientId);
     setActiveClientId(clientId);
+    window.location.reload();
   };
 
   const filteredClients = useMemo(() => {
@@ -103,36 +116,68 @@ export function Clients({ user, onRoleSwitch }: ClientsProps) {
     });
   }, [clients, search, statusFilter]);
 
+  // Aggregate stats
+  const totalSessions = clients.reduce((acc, c) => {
+    const val = parseInt(c.monthlySessions.replace(/[^0-9]/g, ''), 10) || 0;
+    return acc + val;
+  }, 0);
+
+  const totalConversions = clients.reduce((acc, c) => {
+    const val = parseInt(c.monthlyConversions.replace(/[^0-9]/g, ''), 10) || 0;
+    return acc + val;
+  }, 0);
+
   return (
     <div className="page-content">
-      {/* Live Role Switcher Tester */}
+      {/* Top Page Intro Header (Sociafy Style) */}
+      <div className="page-intro">
+        <div>
+          <h2>Client Accounts & Workspaces</h2>
+          <p className="muted">
+            Manage multi-brand workspaces, role-based access permissions, and analytics properties.
+          </p>
+        </div>
+
+        {!isViewer && (
+          <button
+            type="button"
+            className="button button-primary"
+            onClick={() => setShowInvite(true)}
+          >
+            <Plus size={16} />
+            <span>Add Client Account</span>
+          </button>
+        )}
+      </div>
+
+      {/* Live Role Switcher Pill Bar */}
       <div
         style={{
-          background: '#123c35',
-          color: '#fff',
-          padding: '10px 18px',
-          borderRadius: '8px',
-          marginBottom: '20px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          flexWrap: 'wrap',
           gap: '12px',
+          background: 'var(--white)',
+          padding: '10px 20px',
+          borderRadius: 'var(--radius-card)',
+          boxShadow: 'var(--shadow-card)',
+          marginBottom: '22px',
+          flexWrap: 'wrap',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-          <span>Current Session Role:</span>
-          <Badge tone={user.role === 'admin' ? 'positive' : 'warning'}>
-            {user.role === 'admin' ? 'Workspace Admin' : 'Viewer (Freelancer)'}
-          </Badge>
+          <strong style={{ color: 'var(--ink)' }}>Current Session:</strong>
+          <span className={`badge ${user.role === 'admin' ? 'badge-positive' : 'badge-warning'}`}>
+            {user.role === 'admin' ? 'Workspace Admin (Full Control)' : 'Viewer (Freelancer Read-Only)'}
+          </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
-          <span style={{ color: '#91cfb1' }}>Test Role Permissions:</span>
+          <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Test Role Permissions:</span>
           <button
             type="button"
             className={`badge ${user.role === 'admin' ? 'badge-positive' : 'badge-neutral'}`}
-            style={{ cursor: 'pointer', border: 0 }}
+            style={{ cursor: 'pointer', border: 0, padding: '6px 12px' }}
             onClick={() => onRoleSwitch?.('admin')}
           >
             Admin (Full Access)
@@ -140,193 +185,402 @@ export function Clients({ user, onRoleSwitch }: ClientsProps) {
           <button
             type="button"
             className={`badge ${user.role === 'viewer' ? 'badge-warning' : 'badge-neutral'}`}
-            style={{ cursor: 'pointer', border: 0 }}
+            style={{ cursor: 'pointer', border: 0, padding: '6px 12px' }}
             onClick={() => onRoleSwitch?.('viewer')}
           >
-            Viewer (Freelancer Restricted)
+            Viewer (Read-Only)
           </button>
         </div>
       </div>
 
-      <div className="page-intro">
-        <div>
-          <p className="eyebrow">Client Portfolio</p>
-          <h2>Accounts & Workspaces</h2>
-          <p className="muted">
-            Track performance, permissions, and GA4 property bindings across each account.
-          </p>
+      {/* 4 Sociafy-Style KPI Cards for Clients Suite */}
+      <div className="clients-kpi-grid">
+        <div className="sociafy-metric-card">
+          <div className="sociafy-metric-top">
+            <h4 className="sociafy-metric-label">Client Workspaces</h4>
+            <div className="sociafy-metric-badge purple">
+              <Building2 size={18} />
+            </div>
+          </div>
+          <div className="sociafy-metric-bottom">
+            <div className="sociafy-metric-row">
+              <span className="sociafy-metric-value">{clients.length}</span>
+              <span className="sociafy-pill-trend up">
+                <CheckCircle2 size={12} /> Active
+              </span>
+            </div>
+            <span className="sociafy-metric-sub">Dedicated brand environments</span>
+          </div>
         </div>
-        {!isViewer && (
-          <Button onClick={() => setShowInvite((v) => !v)}>
-            {showInvite ? 'Close Form' : '+ Add Client Account'}
-          </Button>
-        )}
+
+        <div className="sociafy-metric-card">
+          <div className="sociafy-metric-top">
+            <h4 className="sociafy-metric-label">Pipeline Health</h4>
+            <div className="sociafy-metric-badge green">
+              <CheckCircle2 size={18} />
+            </div>
+          </div>
+          <div className="sociafy-metric-bottom">
+            <div className="sociafy-metric-row">
+              <span className="sociafy-metric-value">100%</span>
+              <span className="sociafy-pill-trend up">Healthy</span>
+            </div>
+            <span className="sociafy-metric-sub">API tokens active & synced</span>
+          </div>
+        </div>
+
+        <div className="sociafy-metric-card">
+          <div className="sociafy-metric-top">
+            <h4 className="sociafy-metric-label">Monthly Sessions</h4>
+            <div className="sociafy-metric-badge blue">
+              <Activity size={18} />
+            </div>
+          </div>
+          <div className="sociafy-metric-bottom">
+            <div className="sociafy-metric-row">
+              <span className="sociafy-metric-value">
+                {totalSessions.toLocaleString('en-US')}
+              </span>
+              <span className="sociafy-pill-trend up">+18.4%</span>
+            </div>
+            <span className="sociafy-metric-sub">Aggregated traffic across accounts</span>
+          </div>
+        </div>
+
+        <div className="sociafy-metric-card">
+          <div className="sociafy-metric-top">
+            <h4 className="sociafy-metric-label">Total Conversions</h4>
+            <div className="sociafy-metric-badge pink">
+              <Target size={18} />
+            </div>
+          </div>
+          <div className="sociafy-metric-bottom">
+            <div className="sociafy-metric-row">
+              <span className="sociafy-metric-value">
+                {totalConversions.toLocaleString('en-US')}
+              </span>
+              <span className="sociafy-pill-trend up">+14.2%</span>
+            </div>
+            <span className="sociafy-metric-sub">Aggregated client conversions</span>
+          </div>
+        </div>
       </div>
 
-      {showInvite && !isViewer && (
-        <Card className="invite-card" title="Add / Invite New Client">
-          <form className="invite-form" onSubmit={handleCreateClient}>
-            <Input
-              required
-              placeholder="Company or Brand Name (e.g. Apex Labs)"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              aria-label="Client Name"
-            />
-            <Input
-              type="text"
-              placeholder="Website URL (e.g. apexlabs.io)"
-              value={website}
-              onChange={(e) => setWebsite(e.target.value)}
-              aria-label="Website"
-            />
-            <Input
-              type="email"
-              placeholder="Contact Email for Invite"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              aria-label="Client Email"
-            />
-            <select
-              className="select"
-              value={role}
-              onChange={(e) => setRole(e.target.value as 'admin' | 'editor' | 'viewer')}
-              aria-label="Access Level"
-            >
-              <option value="viewer">Viewer — Insights only</option>
-              <option value="editor">Editor — Reports & Insights</option>
-              <option value="admin">Admin — Full Workspace Access</option>
-            </select>
-            <Button type="submit">Send Invitation</Button>
-          </form>
-          {message && <p className="save-note" style={{ marginTop: '12px' }}>{message}</p>}
-        </Card>
-      )}
+      {/* Modern Filter Toolbar */}
+      <div className="clients-toolbar">
+        {/* Search input with icon */}
+        <div className="reports-search-box">
+          <Search />
+          <input
+            type="text"
+            className="reports-search-input"
+            placeholder="Search by company or domain..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
 
-      {/* Filter and Search Bar */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '12px',
-          marginBottom: '18px',
-          flexWrap: 'wrap',
-        }}
-      >
-        <Input
-          placeholder="Search by company or domain..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ width: '280px' }}
-        />
-
-        <div style={{ display: 'flex', gap: '8px' }}>
+        {/* Filter Pills */}
+        <div className="pill-segmented-control">
           <button
             type="button"
-            className={`badge ${statusFilter === 'all' ? 'badge-neutral' : ''}`}
+            className={`pill-segmented-btn ${statusFilter === 'all' ? 'active' : ''}`}
             onClick={() => setStatusFilter('all')}
-            style={{ border: 0, cursor: 'pointer', padding: '6px 12px' }}
           >
             All Accounts ({clients.length})
           </button>
           <button
             type="button"
-            className={`badge ${statusFilter === 'healthy' ? 'badge-positive' : ''}`}
+            className={`pill-segmented-btn ${statusFilter === 'healthy' ? 'active' : ''}`}
             onClick={() => setStatusFilter('healthy')}
-            style={{ border: 0, cursor: 'pointer', padding: '6px 12px' }}
           >
             Healthy Status
           </button>
           <button
             type="button"
-            className={`badge ${statusFilter === 'review' ? 'badge-warning' : ''}`}
+            className={`pill-segmented-btn ${statusFilter === 'review' ? 'active' : ''}`}
             onClick={() => setStatusFilter('review')}
-            style={{ border: 0, cursor: 'pointer', padding: '6px 12px' }}
           >
             Needs Review
           </button>
         </div>
       </div>
 
-      <Card>
-        <div className="simple-list">
-          {filteredClients.length > 0 ? (
-            filteredClients.map((client) => {
-              const isCurrent = client.id === activeId;
-              return (
-                <div className="simple-row" key={client.id} style={{ alignItems: 'center' }}>
-                  <div className="client-avatar">{client.name.slice(0, 1).toUpperCase()}</div>
+      {/* Empty State */}
+      {filteredClients.length === 0 && (
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '60px 20px',
+            background: 'var(--white)',
+            borderRadius: 'var(--radius-card)',
+            boxShadow: 'var(--shadow-card)',
+          }}
+        >
+          <Building2 size={40} color="var(--muted-light)" style={{ marginBottom: '12px' }} />
+          <h3 style={{ margin: '0 0 6px', color: 'var(--ink)' }}>No Client Accounts Found</h3>
+          <p className="muted" style={{ margin: 0 }}>
+            {search
+              ? `No clients matched your search query "${search}".`
+              : 'Click "+ Add Client Account" to create your first client workspace.'}
+          </p>
+        </div>
+      )}
 
-                  <div>
+      {/* Modern Sociafy-Inspired Client Cards Grid */}
+      <div className="reports-card-grid">
+        {filteredClients.map((client, idx) => {
+          const isCurrent = client.id === activeId;
+          const gradientClass = `gradient-${(idx % 4) + 1}`;
+
+          return (
+            <div
+              key={client.id}
+              className={`client-item-card ${isCurrent ? 'active-workspace' : ''}`}
+            >
+              <div>
+                {/* Card Top: Avatar + Title + Status */}
+                <div className="client-item-top">
+                  <div className={`client-item-avatar ${gradientClass}`}>
+                    {client.name.slice(0, 1).toUpperCase()}
+                  </div>
+                  <div className="client-item-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <strong>{client.name}</strong>
-                      {isCurrent && <Badge tone="positive">Active Context</Badge>}
+                      <h3 className="client-item-title">{client.name}</h3>
+                      {isCurrent && (
+                        <span className="badge badge-positive" style={{ fontSize: '10px' }}>
+                          Active
+                        </span>
+                      )}
                     </div>
-                    <span>
-                      {client.website} • Synced {client.lastSynced} • {client.monthlySessions} sessions / mo
-                    </span>
+                    <a
+                      href={client.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="client-item-link"
+                    >
+                      <span>{client.website.replace(/^https?:\/\//, '')}</span>
+                      <ExternalLink size={12} />
+                    </a>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Badge tone={client.status === 'healthy' ? 'positive' : 'warning'}>
-                      {client.status === 'healthy' ? 'Healthy' : 'Needs Review'}
-                    </Badge>
+                  <span
+                    className={`badge ${client.status === 'healthy' ? 'badge-positive' : 'badge-warning'}`}
+                    style={{ fontSize: '10px' }}
+                  >
+                    {client.status === 'healthy' ? '● Healthy' : '● Needs Review'}
+                  </span>
+                </div>
 
-                    <select
-                      className="permission-select"
-                      value={client.role}
-                      disabled={isViewer}
-                      title={isViewer ? 'Only Admins can change client role permissions' : undefined}
-                      onChange={(e) =>
-                        handleRoleChange(client.id, e.target.value as 'admin' | 'editor' | 'viewer')
-                      }
-                      aria-label={`${client.name} permission`}
-                    >
-                      <option value="admin">Admin</option>
-                      <option value="editor">Editor</option>
-                      <option value="viewer">Viewer</option>
-                    </select>
-
-                    {!isCurrent && (
-                      <Button
-                        variant="ghost"
-                        onClick={() => handleSelectWorkspace(client.id)}
-                        title="Set this client as active workspace"
-                      >
-                        Select
-                      </Button>
-                    )}
-
-                    {!isViewer && (
-                      <button
-                        type="button"
-                        style={{
-                          border: 0,
-                          background: 'transparent',
-                          color: 'var(--coral)',
-                          cursor: 'pointer',
-                          padding: '4px 8px',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                        }}
-                        onClick={() => handleDeleteClient(client.id)}
-                        title="Remove client"
-                      >
-                        Delete
-                      </button>
-                    )}
+                {/* 3-Column Mini KPI Metrics Box */}
+                <div className="client-metrics-box">
+                  <div className="client-metric-stat">
+                    <strong>{client.monthlySessions}</strong>
+                    <span>Sessions / Mo</span>
+                  </div>
+                  <div className="client-metric-stat">
+                    <strong>{client.monthlyConversions}</strong>
+                    <span>Conversions</span>
+                  </div>
+                  <div className="client-metric-stat">
+                    <strong style={{ color: 'var(--green)' }}>{client.lastSynced}</strong>
+                    <span>Token Sync</span>
                   </div>
                 </div>
-              );
-            })
-          ) : (
-            <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--muted)' }}>
-              No client accounts matching your filter.
+              </div>
+
+              {/* Card Bottom Actions */}
+              <div className="report-item-actions">
+                <div className="report-action-group">
+                  {/* Role Permission Dropdown */}
+                  <select
+                    className="pill-select"
+                    style={{ padding: '6px 12px', fontSize: '12px' }}
+                    value={client.role}
+                    disabled={isViewer}
+                    title={isViewer ? 'Only Admins can change client role permissions' : undefined}
+                    onChange={(e) =>
+                      handleRoleChange(client.id, e.target.value as 'admin' | 'editor' | 'viewer')
+                    }
+                    aria-label={`${client.name} permission`}
+                  >
+                    <option value="admin">Role: Admin</option>
+                    <option value="editor">Role: Editor</option>
+                    <option value="viewer">Role: Viewer</option>
+                  </select>
+
+                  {/* Switch Workspace Button */}
+                  {!isCurrent ? (
+                    <button
+                      type="button"
+                      className="button button-secondary"
+                      style={{ padding: '6px 14px', fontSize: '12px' }}
+                      onClick={() => handleSelectWorkspace(client.id)}
+                    >
+                      Switch To
+                    </button>
+                  ) : (
+                    <span
+                      className="badge badge-positive"
+                      style={{ padding: '6px 12px', fontSize: '12px' }}
+                    >
+                      <Check size={13} style={{ marginRight: '4px' }} /> Selected
+                    </span>
+                  )}
+                </div>
+
+                {!isViewer && (
+                  <button
+                    type="button"
+                    className="icon-circle-btn"
+                    style={{ width: '34px', height: '34px', color: 'var(--coral)' }}
+                    onClick={() => handleDeleteClient(client.id)}
+                    title="Delete client account"
+                    aria-label="Delete client"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
             </div>
-          )}
+          );
+        })}
+      </div>
+
+      {/* Add Client Modern Modal Dialog */}
+      {showInvite && !isViewer && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.45)',
+            display: 'grid',
+            placeItems: 'center',
+            zIndex: 100,
+            padding: '20px',
+            backdropFilter: 'blur(4px)',
+          }}
+          onClick={() => setShowInvite(false)}
+        >
+          <div
+            className="card"
+            style={{
+              width: 'min(100%, 520px)',
+              padding: '30px',
+              borderRadius: '24px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '20px',
+                borderBottom: '1px solid var(--line)',
+                paddingBottom: '14px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div className="sociafy-metric-badge purple" style={{ width: '36px', height: '36px' }}>
+                  <Sparkles size={18} />
+                </div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>
+                  Add Client Workspace
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="icon-circle-btn"
+                style={{ width: '32px', height: '32px' }}
+                onClick={() => setShowInvite(false)}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateClient} style={{ display: 'grid', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink)' }}>
+                  Brand or Company Name
+                </label>
+                <input
+                  required
+                  className="input"
+                  style={{ width: '100%' }}
+                  placeholder="e.g. Apex Digital Commerce"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink)' }}>
+                  Website Property URL
+                </label>
+                <input
+                  className="input"
+                  style={{ width: '100%' }}
+                  placeholder="e.g. apexcommerce.io"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink)' }}>
+                    Contact Email
+                  </label>
+                  <input
+                    type="email"
+                    className="input"
+                    style={{ width: '100%' }}
+                    placeholder="marketing@apex.io"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink)' }}>
+                    Initial Access Level
+                  </label>
+                  <select
+                    className="select"
+                    style={{ width: '100%' }}
+                    value={role}
+                    onChange={(e) => setRole(e.target.value as 'admin' | 'editor' | 'viewer')}
+                  >
+                    <option value="viewer">Viewer (Read-Only)</option>
+                    <option value="editor">Editor (Reports & Data)</option>
+                    <option value="admin">Admin (Full Control)</option>
+                  </select>
+                </div>
+              </div>
+
+              {message && (
+                <div style={{ padding: '10px 14px', background: '#ecfdf5', borderRadius: '10px', color: 'var(--green)', fontSize: '12px', fontWeight: 600 }}>
+                  ✓ {message}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={() => setShowInvite(false)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="button button-primary">
+                  Create Workspace
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </Card>
+      )}
     </div>
   );
 }

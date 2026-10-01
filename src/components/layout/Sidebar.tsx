@@ -1,5 +1,13 @@
 import type { Page, UserRole } from '../../types';
 import { getStoredClients, getActiveClientId } from '../../utils/clients';
+import {
+  LayoutDashboard,
+  Gauge,
+  Users,
+  Plug,
+  FileBarChart,
+  Sparkles,
+} from 'lucide-react';
 
 interface SidebarProps {
   page: Page;
@@ -7,11 +15,15 @@ interface SidebarProps {
   role: UserRole;
 }
 
-const items: { id: Page; label: string; icon: string }[] = [
-  { id: 'dashboard', label: 'Overview', icon: 'OV' },
-  { id: 'clients', label: 'Clients', icon: 'CL' },
-  { id: 'integrations', label: 'Integrations', icon: 'IN' },
-  { id: 'reports', label: 'Reports', icon: 'RP' },
+const mainMenu: { id: Page; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
+  { id: 'performance', label: 'Performance', icon: Gauge },
+  { id: 'integrations', label: 'Integrations', icon: Plug },
+  { id: 'reports', label: 'Reports', icon: FileBarChart },
+];
+
+const workspaceMenu: { id: Page; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: 'clients', label: 'Clients', icon: Users },
 ];
 
 export function Sidebar({ page, onNavigate, role }: SidebarProps) {
@@ -21,40 +33,74 @@ export function Sidebar({ page, onNavigate, role }: SidebarProps) {
 
   return (
     <aside className="sidebar">
+      {/* Brand Header */}
       <div className="brand" style={{ cursor: 'pointer' }} onClick={() => onNavigate('dashboard')}>
         <span className="brand-mark">M</span>
-        <span>
-          market<span>ing</span> insights
-        </span>
+        <div className="brand-text">
+          Marketing<span>Insights</span>
+        </div>
       </div>
 
-      <p className="nav-label">Workspace</p>
+      {/* Main Menu Section */}
+      <div className="nav-section">
+        <p className="nav-label">Main Menu</p>
+        <nav>
+          {mainMenu.map((item) => {
+            const Icon = item.icon;
+            const isActive = page === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`nav-item ${isActive ? 'active' : ''}`}
+                onClick={() => onNavigate(item.id)}
+              >
+                <Icon className="nav-icon-svg" />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
 
-      <nav>
-        {items.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={`nav-item ${page === item.id ? 'active' : ''}`}
-            onClick={() => onNavigate(item.id)}
-          >
-            <span className="nav-icon">{item.icon}</span>
-            {item.label}
-          </button>
-        ))}
-      </nav>
+      {/* Workspace / General Section */}
+      <div className="nav-section">
+        <p className="nav-label">Workspace</p>
+        <nav>
+          {workspaceMenu.map((item) => {
+            const Icon = item.icon;
+            const isActive = page === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`nav-item ${isActive ? 'active' : ''}`}
+                onClick={() => onNavigate(item.id)}
+              >
+                <Icon className="nav-icon-svg" />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
 
-      <div className="sidebar-footer">
-        <p className="nav-label">Active Workspace</p>
-        <strong>{activeClient?.name || 'Northstar Agency'}</strong>
-        <span style={{ display: 'block', marginTop: '4px' }}>
-          Role: <strong style={{ color: role === 'admin' ? '#91cfb1' : '#f7c96a', display: 'inline' }}>
-            {role === 'admin' ? 'Workspace Admin' : 'Viewer (Freelancer)'}
-          </strong>
-        </span>
-        <span style={{ fontSize: '11px', color: '#86a69b', marginTop: '4px' }}>
-          {clients.length} client accounts
-        </span>
+      {/* Sociafy Inspired Lower Promo / Workspace Status Card */}
+      <div className="sidebar-promo-card">
+        <div className="sidebar-promo-badge">
+          <Sparkles size={20} />
+        </div>
+        <h4 className="sidebar-promo-title">{activeClient?.name || 'Northstar Agency'}</h4>
+        <p className="sidebar-promo-text">
+          {role === 'admin' ? 'Full Workspace Admin Access' : 'Read-Only Viewer Access'} • {clients.length} active client{clients.length === 1 ? '' : 's'}
+        </p>
+        <button
+          type="button"
+          className="sidebar-promo-btn"
+          onClick={() => onNavigate('clients')}
+        >
+          Manage Workspaces
+        </button>
       </div>
     </aside>
   );

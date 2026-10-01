@@ -1,9 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
 import type { AuthUser } from '../types';
+import {
+  Plug,
+  Activity,
+  Globe,
+  DollarSign,
+  CheckCircle2,
+  AlertCircle,
+  Zap,
+  Settings,
+  X,
+  Lock,
+} from 'lucide-react';
 
 interface IntegrationsProps {
   user: AuthUser;
@@ -14,6 +22,7 @@ type ConnectionMethod = 'oauth' | 'api';
 interface Integration {
   name: string;
   provider: 'google' | 'meta';
+  category: string;
   detail: string;
   connected: boolean;
   method?: ConnectionMethod;
@@ -26,9 +35,10 @@ interface Integration {
 
 const defaultIntegrations: Integration[] = [
   {
-    name: 'Google Analytics',
+    name: 'Google Analytics 4',
     provider: 'google',
-    detail: 'Traffic, sessions, active users, and conversions via Google Analytics Data API (GA4).',
+    category: 'Traffic & Engagement',
+    detail: 'Live session volumes, funnel conversions, active users, and average session duration via GA4 Data API.',
     connected: false,
     accountLabel: 'GA4 Property ID',
     accountPlaceholder: 'e.g. 384920184',
@@ -37,16 +47,18 @@ const defaultIntegrations: Integration[] = [
   {
     name: 'Google Search Console',
     provider: 'google',
-    detail: 'Search queries, ranking positions, organic clicks, and impressions via Webmasters API.',
+    category: 'SEO & Organic Ranking',
+    detail: 'Top organic search queries, CTR, ranking position velocity, and keyword impressions via Webmasters API.',
     connected: false,
-    accountLabel: 'Website URL Property',
+    accountLabel: 'Website Domain URL',
     accountPlaceholder: 'https://acmecommerce.io',
     lastSynced: 'Ready to connect',
   },
   {
     name: 'Meta Business & Ads',
     provider: 'meta',
-    detail: 'Paid social campaigns, ad spend, ROAS, CPC, and conversion actions via Meta Graph API.',
+    category: 'Paid Advertising',
+    detail: 'Paid Facebook & Instagram ad spend, purchase ROAS, CPC benchmarks, and ad campaign conversion tracking.',
     connected: false,
     accountLabel: 'Meta Ad Account ID',
     accountPlaceholder: 'act_1234567890',
@@ -133,7 +145,7 @@ export function Integrations({ user }: IntegrationsProps) {
 
         const data = await res.json();
         if (data.token) {
-          // Save to serverless token vault
+          // Save to local token vault
           await fetch('/api/tokens', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -158,7 +170,6 @@ export function Integrations({ user }: IntegrationsProps) {
         if (json.configured && json.authUrl) {
           window.location.href = json.authUrl;
         } else {
-          // Provide clear guidance if cloud keys not yet configured
           setStatusMessage(
             json.message ||
               'Cloud OAuth client ID not configured in server environment. Use Instant Sandbox OAuth below to verify live flow immediately.'
@@ -205,7 +216,7 @@ export function Integrations({ user }: IntegrationsProps) {
     try {
       await fetch(`/api/tokens?provider=${item.provider}`, { method: 'DELETE' });
     } catch {
-      // ignore server errors
+      // ignore
     }
 
     updateConnectionState(item.name, {
@@ -220,19 +231,27 @@ export function Integrations({ user }: IntegrationsProps) {
     }
   };
 
+  const connectedCount = connections.filter((c) => c.connected).length;
+  const currentItem = connections.find((c) => c.name === openIntegration);
+
+  const getIntegrationBadge = (name: string) => {
+    if (name.includes('Analytics')) {
+      return { icon: Activity, theme: 'green' };
+    } else if (name.includes('Search')) {
+      return { icon: Globe, theme: 'purple' };
+    } else {
+      return { icon: DollarSign, theme: 'pink' };
+    }
+  };
+
   return (
     <div className="page-content">
+      {/* Top Page Intro Header (Sociafy Style) */}
       <div className="page-intro">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <span className="eyebrow" style={{ margin: 0 }}>Data Pipeline & API Authorization</span>
-            <Badge tone={isViewer ? 'warning' : 'positive'}>
-              {isViewer ? 'Role: Viewer (Read-Only)' : 'Role: Admin'}
-            </Badge>
-          </div>
-          <h2>Connected Integrations</h2>
+          <h2>Data Pipeline & Connected APIs</h2>
           <p className="muted">
-            Authorize Google Analytics 4, Search Console, and Meta Business to power unified cross-channel insights.
+            Authorize Google Analytics 4, Search Console, and Meta Business to power unified omnichannel intelligence.
           </p>
         </div>
       </div>
@@ -240,161 +259,369 @@ export function Integrations({ user }: IntegrationsProps) {
       {/* RBAC Permission Banner for Viewers */}
       {isViewer && (
         <div
-          className="card"
           style={{
-            background: '#fff8f0',
+            background: 'var(--white)',
             borderLeft: '4px solid var(--yellow)',
+            borderRadius: 'var(--radius-card)',
+            padding: '16px 20px',
             marginBottom: '22px',
             display: 'flex',
             alignItems: 'center',
             gap: '14px',
+            boxShadow: 'var(--shadow-card)',
           }}
         >
-          <div style={{ fontSize: '24px' }}>🔒</div>
+          <div className="sociafy-metric-badge pink" style={{ width: '36px', height: '36px' }}>
+            <Lock size={18} />
+          </div>
           <div>
-            <strong style={{ color: '#9c6c1e', display: 'block', marginBottom: '2px' }}>
-              View-Only Permissions (Freelancer / Client)
+            <strong style={{ color: 'var(--ink)', display: 'block', fontSize: '13px' }}>
+              View-Only Mode (Client / Freelancer)
             </strong>
-            <p style={{ margin: 0, fontSize: '13px', color: 'var(--muted)' }}>
-              You have read-only permissions to inspect live metrics. Only Workspace Admins can initiate OAuth 2.0 flows, modify API keys, or disconnect data sources.
-            </p>
+            <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
+              Only Workspace Admins can initiate OAuth 2.0 flows, modify API bindings, or disconnect data sources.
+            </span>
           </div>
         </div>
       )}
 
-      <div className="integration-grid">
-        {connections.map((item) => (
-          <Card key={item.name}>
-            <div className="integration-icon">{item.name.slice(0, 2).toUpperCase()}</div>
-            <h3>{item.name}</h3>
-            <p className="muted">{item.detail}</p>
-
-            <div className="integration-action">
-              <Badge tone={item.connected ? 'positive' : 'neutral'}>
-                {item.connected
-                  ? `Connected (${item.account || (item.method === 'oauth' ? 'OAuth 2.0' : 'API')})`
-                  : 'Not Connected'}
-              </Badge>
-
-              <Button
-                variant={item.connected ? 'ghost' : 'secondary'}
-                disabled={isViewer}
-                title={isViewer ? 'Freelancers and Viewers cannot modify integrations' : undefined}
-                style={isViewer ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-                onClick={() => (item.connected ? disconnect(item) : configure(item))}
-              >
-                {item.connected ? 'Disconnect' : 'Configure'}
-              </Button>
+      {/* 4 Sociafy-Style KPI Cards for Integrations Suite */}
+      <div className="clients-kpi-grid">
+        <div className="sociafy-metric-card">
+          <div className="sociafy-metric-top">
+            <h4 className="sociafy-metric-label">Pipeline Channels</h4>
+            <div className="sociafy-metric-badge green">
+              <Plug size={18} />
             </div>
+          </div>
+          <div className="sociafy-metric-bottom">
+            <div className="sociafy-metric-row">
+              <span className="sociafy-metric-value">{connectedCount} / 3</span>
+              <span className="sociafy-pill-trend up">
+                <CheckCircle2 size={12} /> {Math.round((connectedCount / 3) * 100)}%
+              </span>
+            </div>
+            <span className="sociafy-metric-sub">Active platform feeds</span>
+          </div>
+        </div>
 
-            {openIntegration === item.name && !isViewer && (
-              <div
-                style={{
-                  marginTop: '18px',
-                  paddingTop: '16px',
-                  borderTop: '1px solid var(--line)',
-                  display: 'grid',
-                  gap: '14px',
-                }}
-              >
-                <div className="role-switch">
-                  <button
-                    type="button"
-                    className={method === 'oauth' ? 'selected' : ''}
-                    onClick={() => setMethod('oauth')}
+        <div className="sociafy-metric-card">
+          <div className="sociafy-metric-top">
+            <h4 className="sociafy-metric-label">Google Analytics 4</h4>
+            <div className="sociafy-metric-badge purple">
+              <Activity size={18} />
+            </div>
+          </div>
+          <div className="sociafy-metric-bottom">
+            <div className="sociafy-metric-row">
+              <span className="sociafy-metric-value" style={{ fontSize: '20px' }}>
+                {connections[0].connected ? 'Live Sync' : 'Ready'}
+              </span>
+              <span className={`sociafy-pill-trend ${connections[0].connected ? 'up' : 'neutral'}`}>
+                GA4 Beta
+              </span>
+            </div>
+            <span className="sociafy-metric-sub">Sessions & conversions</span>
+          </div>
+        </div>
+
+        <div className="sociafy-metric-card">
+          <div className="sociafy-metric-top">
+            <h4 className="sociafy-metric-label">Search Console</h4>
+            <div className="sociafy-metric-badge blue">
+              <Globe size={18} />
+            </div>
+          </div>
+          <div className="sociafy-metric-bottom">
+            <div className="sociafy-metric-row">
+              <span className="sociafy-metric-value" style={{ fontSize: '20px' }}>
+                {connections[1].connected ? 'Live Sync' : 'Ready'}
+              </span>
+              <span className={`sociafy-pill-trend ${connections[1].connected ? 'up' : 'neutral'}`}>
+                GSC API
+              </span>
+            </div>
+            <span className="sociafy-metric-sub">Keyword velocity & ranks</span>
+          </div>
+        </div>
+
+        <div className="sociafy-metric-card">
+          <div className="sociafy-metric-top">
+            <h4 className="sociafy-metric-label">Meta Business / Ads</h4>
+            <div className="sociafy-metric-badge pink">
+              <DollarSign size={18} />
+            </div>
+          </div>
+          <div className="sociafy-metric-bottom">
+            <div className="sociafy-metric-row">
+              <span className="sociafy-metric-value" style={{ fontSize: '20px' }}>
+                {connections[2].connected ? 'Live Sync' : 'Ready'}
+              </span>
+              <span className={`sociafy-pill-trend ${connections[2].connected ? 'up' : 'neutral'}`}>
+                Graph API
+              </span>
+            </div>
+            <span className="sociafy-metric-sub">Ad spend & purchase ROAS</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Modern 3-Column Integration Cards Grid */}
+      <div className="integration-grid">
+        {connections.map((item) => {
+          const badge = getIntegrationBadge(item.name);
+          const Icon = badge.icon;
+
+          return (
+            <div
+              key={item.name}
+              className="card"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                padding: '26px',
+              }}
+            >
+              <div>
+                {/* Header: Icon + Status */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                  <div className={`sociafy-metric-badge ${badge.theme}`} style={{ width: '46px', height: '46px', borderRadius: '16px' }}>
+                    <Icon size={22} />
+                  </div>
+                  <span
+                    className={`badge ${item.connected ? 'badge-positive' : 'badge-neutral'}`}
+                    style={{ fontSize: '11px', padding: '4px 10px' }}
                   >
-                    <strong>OAuth 2.0</strong>
-                    <span>Fast & secure login</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={method === 'api' ? 'selected' : ''}
-                    onClick={() => setMethod('api')}
-                  >
-                    <strong>Manual Property ID</strong>
-                    <span>Direct property binding</span>
-                  </button>
+                    {item.connected ? '● Connected' : '○ Available'}
+                  </span>
                 </div>
 
-                {method === 'oauth' ? (
-                  <div style={{ display: 'grid', gap: '10px' }}>
-                    <p className="muted" style={{ fontSize: '12px', margin: 0 }}>
-                      Authorize {item.name} with one click. Tokens are securely encrypted and stored in your cloud vault.
-                    </p>
+                <span className="eyebrow" style={{ color: 'var(--muted)', margin: '0 0 4px', display: 'block' }}>
+                  {item.category}
+                </span>
+                <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: 'var(--ink)' }}>
+                  {item.name}
+                </h3>
+                <p className="muted" style={{ fontSize: '13px', lineHeight: 1.5, marginBottom: '20px' }}>
+                  {item.detail}
+                </p>
 
-                    <label style={{ display: 'grid', gap: '4px', fontSize: '12px', color: 'var(--muted)' }}>
-                      {item.accountLabel} (Optional)
-                      <Input
-                        value={account}
-                        placeholder={item.accountPlaceholder}
-                        onChange={(e) => setAccount(e.target.value)}
-                      />
-                    </label>
+                {/* Account / Property Tag */}
+                <div style={{ padding: '10px 14px', background: 'var(--paper-soft)', borderRadius: 'var(--radius-sm)', marginBottom: '20px' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block', fontWeight: 600 }}>
+                    {item.accountLabel}
+                  </span>
+                  <strong style={{ fontSize: '13px', color: 'var(--ink)', wordBreak: 'break-all' }}>
+                    {item.account || 'Not configured'}
+                  </strong>
+                </div>
+              </div>
 
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <Button
-                        type="button"
-                        onClick={() => handleOAuthConnect(item, false)}
-                        disabled={loading}
-                      >
-                        {loading ? 'Connecting...' : `Connect with ${item.provider === 'google' ? 'Google' : 'Meta'} OAuth`}
-                      </Button>
+              {/* Bottom Actions */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '16px', borderTop: '1px solid var(--line)' }}>
+                <span style={{ fontSize: '11px', color: 'var(--muted-light)' }}>
+                  {item.lastSynced}
+                </span>
 
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={() => handleOAuthConnect(item, true)}
-                        disabled={loading}
-                        title="Simulate instant OAuth 2.0 token acquisition without external credentials"
-                      >
-                        ⚡ Instant Sandbox OAuth
-                      </Button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {item.connected ? (
+                    <button
+                      type="button"
+                      className="button button-secondary"
+                      style={{ padding: '6px 14px', fontSize: '12px', color: 'var(--coral)' }}
+                      disabled={isViewer}
+                      onClick={() => disconnect(item)}
+                    >
+                      Disconnect
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="button button-primary"
+                      style={{ padding: '6px 16px', fontSize: '12px' }}
+                      disabled={isViewer}
+                      onClick={() => configure(item)}
+                    >
+                      Configure
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => setOpenIntegration(null)}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <form onSubmit={(e) => handleManualSave(e, item)} style={{ display: 'grid', gap: '10px' }}>
-                    <label style={{ display: 'grid', gap: '4px', fontSize: '12px', color: 'var(--muted)' }}>
-                      {item.accountLabel}
-                      <Input
-                        required
-                        value={account}
-                        placeholder={item.accountPlaceholder}
-                        onChange={(e) => setAccount(e.target.value)}
-                      />
-                    </label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <Button type="submit">Save Binding</Button>
-                      <Button type="button" variant="ghost" onClick={() => setOpenIntegration(null)}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </form>
-                )}
+      {/* Configure Integration Modern Modal Dialog */}
+      {openIntegration && currentItem && !isViewer && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.45)',
+            display: 'grid',
+            placeItems: 'center',
+            zIndex: 100,
+            padding: '20px',
+            backdropFilter: 'blur(4px)',
+          }}
+          onClick={() => setOpenIntegration(null)}
+        >
+          <div
+            className="card"
+            style={{
+              width: 'min(100%, 540px)',
+              padding: '30px',
+              borderRadius: '24px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '20px',
+                borderBottom: '1px solid var(--line)',
+                paddingBottom: '14px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div className="sociafy-metric-badge green" style={{ width: '36px', height: '36px' }}>
+                  <Settings size={18} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>
+                    Configure {currentItem.name}
+                  </h3>
+                  <span className="muted" style={{ fontSize: '12px' }}>
+                    Select connection method and authorize data pipeline
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="icon-circle-btn"
+                style={{ width: '32px', height: '32px' }}
+                onClick={() => setOpenIntegration(null)}
+              >
+                <X size={16} />
+              </button>
+            </div>
 
-                {statusMessage && (
-                  <p
-                    className="save-note"
-                    style={{
-                      margin: 0,
-                      color: statusMessage.startsWith('✓') ? 'var(--green)' : 'var(--coral)',
-                    }}
-                  >
-                    {statusMessage}
+            {/* Method Segmented Switcher */}
+            <div className="pill-segmented-control" style={{ marginBottom: '20px' }}>
+              <button
+                type="button"
+                className={`pill-segmented-btn ${method === 'oauth' ? 'active' : ''}`}
+                style={{ flex: 1 }}
+                onClick={() => setMethod('oauth')}
+              >
+                OAuth 2.0 (Recommended)
+              </button>
+              <button
+                type="button"
+                className={`pill-segmented-btn ${method === 'api' ? 'active' : ''}`}
+                style={{ flex: 1 }}
+                onClick={() => setMethod('api')}
+              >
+                Manual Property ID
+              </button>
+            </div>
+
+            {method === 'oauth' ? (
+              <div style={{ display: 'grid', gap: '16px' }}>
+                <div style={{ padding: '14px', background: 'var(--paper-soft)', borderRadius: 'var(--radius-sm)' }}>
+                  <p style={{ margin: 0, fontSize: '12px', color: 'var(--ink)', lineHeight: 1.5 }}>
+                    Authorize {currentItem.name} with one click. Tokens are encrypted and securely stored in your local token vault.
                   </p>
-                )}
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink)' }}>
+                    {currentItem.accountLabel} (Optional)
+                  </label>
+                  <input
+                    className="input"
+                    style={{ width: '100%' }}
+                    value={account}
+                    placeholder={currentItem.accountPlaceholder}
+                    onChange={(e) => setAccount(e.target.value)}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px' }}>
+                  <button
+                    type="button"
+                    className="button button-primary"
+                    onClick={() => handleOAuthConnect(currentItem, false)}
+                    disabled={loading}
+                  >
+                    {loading ? 'Connecting...' : `Connect with ${currentItem.provider === 'google' ? 'Google' : 'Meta'} OAuth`}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={() => handleOAuthConnect(currentItem, true)}
+                    disabled={loading}
+                    title="Simulate instant OAuth 2.0 token acquisition"
+                  >
+                    <Zap size={14} style={{ color: 'var(--green)' }} />
+                    <span>⚡ Instant Sandbox OAuth</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={(e) => handleManualSave(e, currentItem)} style={{ display: 'grid', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink)' }}>
+                    {currentItem.accountLabel}
+                  </label>
+                  <input
+                    required
+                    className="input"
+                    style={{ width: '100%' }}
+                    value={account}
+                    placeholder={currentItem.accountPlaceholder}
+                    onChange={(e) => setAccount(e.target.value)}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={() => setOpenIntegration(null)}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="button button-primary">
+                    Save Binding
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {statusMessage && (
+              <div
+                style={{
+                  marginTop: '16px',
+                  padding: '12px 14px',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                  background: statusMessage.startsWith('✓') ? '#ecfdf5' : '#fff1f2',
+                  color: statusMessage.startsWith('✓') ? 'var(--green)' : 'var(--coral)',
+                  fontWeight: 600,
+                }}
+              >
+                {statusMessage}
               </div>
             )}
-          </Card>
-        ))}
-      </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
