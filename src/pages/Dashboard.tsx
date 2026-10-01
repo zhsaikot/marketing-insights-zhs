@@ -257,14 +257,7 @@ export function Dashboard() {
                 <h2>Meta Paid Campaign Performance</h2>
                 <span className="badge badge-positive">Active Campaign Feed</span>
               </div>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(4, 1fr)',
-                  gap: '16px',
-                  marginBottom: '16px',
-                }}
-              >
+              <div className="meta-campaign-grid">
                 <div style={{ padding: '16px', background: 'var(--paper-soft)', borderRadius: 'var(--radius-sm)' }}>
                   <span className="eyebrow" style={{ margin: 0 }}>Total Ad Spend</span>
                   <strong style={{ fontSize: '22px', display: 'block', margin: '6px 0', color: 'var(--ink)' }}>

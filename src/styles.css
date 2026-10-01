@@ -81,17 +81,50 @@ button {
 }
 
 /* ===================================================================
-   Sleek Light Sidebar
+   Sleek Light Sidebar (Fixed & Collapsible)
    =================================================================== */
 .sidebar {
   width: 260px;
-  flex: none;
-  padding: 30px 20px 24px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 50;
+  flex-shrink: 0;
+  padding: 24px 16px;
   background: var(--sidebar-bg);
   border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
   box-shadow: 2px 0 24px rgba(15, 23, 42, 0.02);
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s ease;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-light);
+}
+
+.brand-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  gap: 8px;
 }
 
 .brand {
@@ -102,7 +135,8 @@ button {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 18px;
   font-weight: 700;
-  margin: 0 4px 34px;
+  margin: 0;
+  min-width: 0;
 }
 
 .brand-mark {
@@ -116,14 +150,93 @@ button {
   font-size: 18px;
   font-weight: 800;
   box-shadow: var(--shadow-pill);
+  flex-shrink: 0;
 }
 
 .brand-text {
   letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
 .brand-text span {
   color: var(--green);
+}
+
+.sidebar-collapse-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+}
+
+.sidebar-collapse-btn:hover {
+  background: var(--paper-soft);
+  color: var(--green);
+  border-color: var(--green-light);
+}
+
+.sidebar-mobile-close-btn {
+  display: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 0;
+  background: var(--paper-soft);
+  color: var(--ink);
+  place-items: center;
+  cursor: pointer;
+}
+
+/* Collapsed Sidebar Mode */
+.sidebar.is-collapsed {
+  width: 76px;
+  padding: 24px 10px;
+}
+
+.sidebar.is-collapsed .brand-container {
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar.is-collapsed .nav-item {
+  justify-content: center;
+  padding: 12px;
+  margin: 4px 0;
+}
+
+.sidebar.is-collapsed .nav-icon-svg {
+  width: 20px;
+  height: 20px;
+}
+
+.sidebar-promo-collapsed {
+  margin-top: auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #f0fdf4;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  display: grid;
+  place-items: center;
+  align-self: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.12);
+}
+
+.sidebar-promo-collapsed:hover {
+  transform: translateY(-2px);
+  background: #dcfce7;
+  border-color: var(--green);
 }
 
 .nav-section {
@@ -1268,8 +1381,92 @@ tr:hover td {
 }
 
 /* ===================================================================
-   Responsive Breakpoints
+   Responsive Breakpoints (< 1440px, < 1280px, < 1024px, < 768px)
    =================================================================== */
+.sidebar-hamburger-btn {
+  display: none;
+}
+
+.meta-campaign-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.profile-layout-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr);
+  gap: 20px;
+}
+
+/* 1. Laptops & Compact Desktops (under 1440px) */
+@media (max-width: 1440px) {
+  .topbar {
+    padding: 16px 28px;
+  }
+  .page-content {
+    padding: 18px 28px 36px;
+  }
+  .metric-grid, .reports-kpi-grid, .clients-kpi-grid {
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 14px;
+  }
+  .dashboard-grid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: 16px;
+  }
+  .search-pill-wrapper {
+    width: 260px;
+  }
+  .reports-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+  }
+}
+
+/* 2. Small Laptops & Tablets Landscape (under 1280px) */
+@media (max-width: 1280px) {
+  .sidebar-hamburger-btn {
+    display: grid;
+  }
+  .topbar {
+    padding: 14px 20px;
+  }
+  .page-content {
+    padding: 16px 20px 32px;
+  }
+  .metric-grid, .reports-kpi-grid, .clients-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .meta-campaign-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .profile-layout-grid {
+    grid-template-columns: 1fr;
+  }
+  .performance-hero-grid {
+    grid-template-columns: 1fr !important;
+    text-align: center;
+  }
+  .performance-details-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .search-pill-wrapper {
+    width: 200px;
+  }
+  .account-profile-pill .account-role {
+    display: none;
+  }
+}
+
+/* 3. Tablets Portrait (under 1024px) */
 @media (max-width: 1024px) {
   .metric-grid, .reports-kpi-grid, .clients-kpi-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1277,41 +1474,103 @@ tr:hover td {
   .reports-card-grid {
     grid-template-columns: 1fr;
   }
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
   .integration-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  .pill-segmented-control {
+    overflow-x: auto;
+    max-width: 100%;
+    scrollbar-width: none;
+  }
+  .pill-segmented-control::-webkit-scrollbar {
+    display: none;
   }
 }
 
+/* 4. Mobile Devices (under 768px) */
 @media (max-width: 768px) {
-  .app-shell {
-    display: block;
-  }
   .sidebar {
-    width: 100%;
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-    padding: 16px 20px;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 270px !important;
+    height: 100vh;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
   }
-  .sidebar .nav-section {
-    margin-bottom: 10px;
+
+  .sidebar.mobile-drawer-open {
+    transform: translateX(0);
   }
-  .sidebar-promo-card {
+
+  .sidebar-mobile-close-btn {
+    display: grid;
+  }
+
+  .sidebar-collapse-btn {
     display: none;
   }
-  .topbar {
-    padding: 16px 20px;
+
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(3px);
+    z-index: 90;
   }
+
+  .sidebar-hamburger-btn {
+    display: grid !important;
+  }
+
+  .topbar {
+    padding: 12px 16px;
+    gap: 8px;
+  }
+
   .search-pill-wrapper {
     display: none;
   }
-  .page-content {
-    padding: 16px 20px 40px;
+
+  .topbar-client-select {
+    max-width: 130px;
+    font-size: 12px;
   }
-  .metric-grid {
+
+  .account-profile-pill .account-name {
+    display: none;
+  }
+
+  .account-profile-pill {
+    padding: 4px;
+    border-radius: 50%;
+  }
+
+  .page-content {
+    padding: 14px 16px 28px;
+  }
+
+  .metric-grid, .reports-kpi-grid, .clients-kpi-grid, .meta-campaign-grid {
     grid-template-columns: 1fr;
+  }
+
+  .page-intro {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .page-intro > div:last-child {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .client-metrics-box, .report-metrics-box {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -1363,15 +1622,5 @@ tr:hover td {
 
 .performance-details-grid {
   grid-template-columns: 1.2fr 0.8fr;
-}
-
-@media (max-width: 900px) {
-  .performance-hero-grid {
-    grid-template-columns: 1fr !important;
-    text-align: center;
-  }
-  .performance-details-grid {
-    grid-template-columns: 1fr !important;
-  }
 }
 

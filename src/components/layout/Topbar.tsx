@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { AuthUser } from '../../types';
 import { getStoredClients, getActiveClientId, setActiveClientId } from '../../utils/clients';
-import { Search, Bell, LogOut } from 'lucide-react';
+import { Search, Bell, LogOut, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 
 interface TopbarProps {
   title: string;
@@ -9,9 +9,18 @@ interface TopbarProps {
   onProfile: () => void;
   onLogout: () => void;
   onExport?: () => void;
+  onToggleSidebar?: () => void;
+  isSidebarCollapsed?: boolean;
 }
 
-export function Topbar({ title, user, onProfile, onLogout }: TopbarProps) {
+export function Topbar({
+  title,
+  user,
+  onProfile,
+  onLogout,
+  onToggleSidebar,
+  isSidebarCollapsed = false,
+}: TopbarProps) {
   const [clients, setClients] = useState(getStoredClients);
   const [activeId, setActiveId] = useState(getActiveClientId);
 
@@ -28,16 +37,31 @@ export function Topbar({ title, user, onProfile, onLogout }: TopbarProps) {
 
   return (
     <header className="topbar">
-      {/* Search Pill Input with Shortcut (Sociafy Style) */}
-      <div className="search-pill-wrapper">
-        <Search className="search-pill-icon" />
-        <input
-          type="text"
-          className="search-pill-input"
-          placeholder="Search metrics, clients, reports..."
-          aria-label="Global search"
-        />
-        <span className="search-pill-shortcut">⌘F</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* Sidebar Toggle Button */}
+        {onToggleSidebar && (
+          <button
+            type="button"
+            className="icon-circle-btn sidebar-hamburger-btn"
+            onClick={onToggleSidebar}
+            title={isSidebarCollapsed ? 'Expand sidebar (Ctrl+B)' : 'Collapse sidebar (Ctrl+B)'}
+            aria-label="Toggle navigation sidebar"
+          >
+            {isSidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+          </button>
+        )}
+
+        {/* Search Pill Input with Shortcut (Sociafy Style) */}
+        <div className="search-pill-wrapper">
+          <Search className="search-pill-icon" />
+          <input
+            type="text"
+            className="search-pill-input"
+            placeholder="Search metrics, clients, reports..."
+            aria-label="Global search"
+          />
+          <span className="search-pill-shortcut">⌘F</span>
+        </div>
       </div>
 
       {/* Right Topbar Actions */}
@@ -45,7 +69,7 @@ export function Topbar({ title, user, onProfile, onLogout }: TopbarProps) {
         {/* Workspace Switcher Pill */}
         {user.role === 'admin' && clients.length > 0 && (
           <select
-            className="pill-select"
+            className="pill-select topbar-client-select"
             value={activeId}
             onChange={(e) => handleClientChange(e.target.value)}
             aria-label="Active Client Workspace"

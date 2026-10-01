@@ -162,7 +162,7 @@ export function Profile({
       </div>
 
       {/* Main Profile Grid: Avatar Banner + Details + Security */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.6fr) minmax(320px, 1fr)', gap: '20px' }}>
+      <div className="profile-layout-grid">
         {/* Left Column: Profile Avatar Upload & Personal Details Form */}
         <div style={{ display: 'grid', gap: '20px' }}>
           {/* Avatar Upload Card */}
