@@ -2,7 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../ui/Card';
 import { Gauge, Smartphone, Monitor, RotateCw, ArrowRight, CheckCircle2, AlertTriangle, AlertCircle } from 'lucide-react';
-import { fetchPageSpeedSummary, getScoreColor, formatTimeAgo } from '../../utils/pagespeed';
+import {
+  fetchPageSpeedSummary,
+  getScoreColor,
+  getScoreCategory,
+  getScoreLabel,
+  formatTimeAgo,
+} from '../../utils/pagespeed';
 import { getActiveClient } from '../../utils/clients';
 import type { PageSpeedSummary } from '../../types';
 
@@ -173,13 +179,26 @@ export function PageSpeedWidget() {
                   style={{
                     fontSize: '24px',
                     fontWeight: 700,
-                    color: getScoreColor(mobileScore),
+                    color: getScoreColor(mobileScore, 'mobile'),
                     fontFamily: 'var(--font-mono)',
                   }}
                 >
                   {mobileScore}
                 </span>
                 <span style={{ fontSize: '12px', color: 'var(--muted)' }}>/ 100</span>
+                <span
+                  className={`badge ${
+                    getScoreCategory(mobileScore, 'mobile') === 'perfect' ||
+                    getScoreCategory(mobileScore, 'mobile') === 'good'
+                      ? 'badge-positive'
+                      : getScoreCategory(mobileScore, 'mobile') === 'needs-improvement'
+                      ? 'badge-warning'
+                      : 'badge-danger'
+                  }`}
+                  style={{ fontSize: '10px', padding: '2px 6px', marginLeft: '4px' }}
+                >
+                  {getScoreLabel(mobileScore, 'mobile')}
+                </span>
               </div>
             </div>
           </div>
@@ -224,13 +243,26 @@ export function PageSpeedWidget() {
                   style={{
                     fontSize: '24px',
                     fontWeight: 700,
-                    color: getScoreColor(desktopScore),
+                    color: getScoreColor(desktopScore, 'desktop'),
                     fontFamily: 'var(--font-mono)',
                   }}
                 >
                   {desktopScore}
                 </span>
                 <span style={{ fontSize: '12px', color: 'var(--muted)' }}>/ 100</span>
+                <span
+                  className={`badge ${
+                    getScoreCategory(desktopScore, 'desktop') === 'perfect' ||
+                    getScoreCategory(desktopScore, 'desktop') === 'good'
+                      ? 'badge-positive'
+                      : getScoreCategory(desktopScore, 'desktop') === 'needs-improvement'
+                      ? 'badge-warning'
+                      : 'badge-danger'
+                  }`}
+                  style={{ fontSize: '10px', padding: '2px 6px', marginLeft: '4px' }}
+                >
+                  {getScoreLabel(desktopScore, 'desktop')}
+                </span>
               </div>
             </div>
           </div>

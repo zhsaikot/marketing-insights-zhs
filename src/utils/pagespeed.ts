@@ -31,16 +31,69 @@ export async function fetchPageSpeedSummary(url: string): Promise<PageSpeedSumma
   return response.json();
 }
 
-export function getScoreCategory(score: number): 'good' | 'needs-improvement' | 'poor' {
-  if (score >= 90) return 'good';
-  if (score >= 50) return 'needs-improvement';
-  return 'poor';
+export type ScoreRating = 'perfect' | 'good' | 'needs-improvement' | 'poor';
+
+/**
+ * Custom performance score category mapping:
+ * - Mobile: >= 85: Perfect, >= 70: Good, >= 50: Needs Work, < 50: Poor
+ * - Desktop: >= 95: Perfect, >= 90: Good, >= 50: Needs Work, < 50: Poor
+ */
+export function getScoreCategory(
+  score: number,
+  strategy: 'mobile' | 'desktop' = 'mobile'
+): ScoreRating {
+  if (strategy === 'mobile') {
+    if (score >= 85) return 'perfect';
+    if (score >= 70) return 'good';
+    if (score >= 50) return 'needs-improvement';
+    return 'poor';
+  } else {
+    // Desktop
+    if (score >= 95) return 'perfect';
+    if (score >= 90) return 'good';
+    if (score >= 50) return 'needs-improvement';
+    return 'poor';
+  }
 }
 
-export function getScoreColor(score: number): string {
-  if (score >= 90) return 'var(--green-accent)';
-  if (score >= 50) return '#f59e0b'; // amber
+export function getScoreColor(
+  score: number,
+  strategy: 'mobile' | 'desktop' = 'mobile'
+): string {
+  const category = getScoreCategory(score, strategy);
+  if (category === 'perfect') return '#10b981'; // vibrant emerald
+  if (category === 'good') return 'var(--brand-green)'; // brand forest green
+  if (category === 'needs-improvement') return '#f59e0b'; // amber
   return 'var(--coral)'; // coral/red
+}
+
+export function getScoreLabel(
+  score: number,
+  strategy: 'mobile' | 'desktop' = 'mobile'
+): string {
+  const category = getScoreCategory(score, strategy);
+  if (category === 'perfect') return 'Perfect';
+  if (category === 'good') return 'Good';
+  if (category === 'needs-improvement') return 'Needs Work';
+  return 'Poor';
+}
+
+export function getScoreBadgeText(
+  score: number,
+  strategy: 'mobile' | 'desktop' = 'mobile'
+): string {
+  const category = getScoreCategory(score, strategy);
+  if (strategy === 'mobile') {
+    if (category === 'perfect') return '● Perfect (85-100)';
+    if (category === 'good') return '● Good (70-84)';
+    if (category === 'needs-improvement') return '● Needs Work (50-69)';
+    return '● Poor (0-49)';
+  } else {
+    if (category === 'perfect') return '● Perfect (95-100)';
+    if (category === 'good') return '● Good (90-94)';
+    if (category === 'needs-improvement') return '● Needs Work (50-89)';
+    return '● Poor (0-49)';
+  }
 }
 
 export function formatTimeAgo(timestamp: string | number): string {

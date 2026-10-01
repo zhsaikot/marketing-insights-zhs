@@ -16,7 +16,13 @@ import {
   TrendingUp,
   Info,
 } from 'lucide-react';
-import { fetchPageSpeedReport, getScoreColor, formatTimeAgo } from '../utils/pagespeed';
+import {
+  fetchPageSpeedReport,
+  getScoreColor,
+  getScoreCategory,
+  getScoreLabel,
+  formatTimeAgo,
+} from '../utils/pagespeed';
 import { getStoredClients, getActiveClientId, setActiveClientId } from '../utils/clients';
 import type { PageSpeedReport, CoreWebVitalMetric } from '../types';
 
@@ -83,7 +89,8 @@ export function Performance() {
   };
 
   const score = report?.performanceScore ?? 0;
-  const scoreColor = getScoreColor(score);
+  const scoreColor = getScoreColor(score, strategy);
+  const scoreCategory = getScoreCategory(score, strategy);
 
   // Compute circular progress offset for gauge
   const radius = 64;
@@ -429,17 +436,31 @@ export function Performance() {
                 </div>
 
                 <div style={{ marginTop: '10px' }}>
-                  {score >= 90 ? (
-                    <span className="badge badge-positive" style={{ padding: '4px 10px' }}>
-                      ● Fast (90-100)
+                  {scoreCategory === 'perfect' ? (
+                    <span
+                      className="badge badge-positive"
+                      style={{
+                        padding: '4px 12px',
+                        background: '#ecfdf5',
+                        color: '#059669',
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        gap: '5px',
+                        fontWeight: 700,
+                      }}
+                    >
+                      <Sparkles size={12} /> {strategy === 'mobile' ? 'Perfect (85-100)' : 'Perfect (95-100)'}
                     </span>
-                  ) : score >= 50 ? (
-                    <span className="badge badge-warning" style={{ padding: '4px 10px' }}>
-                      ● Needs Improvement (50-89)
+                  ) : scoreCategory === 'good' ? (
+                    <span className="badge badge-positive" style={{ padding: '4px 12px', gap: '5px' }}>
+                      <CheckCircle2 size={12} /> {strategy === 'mobile' ? 'Good (70-84)' : 'Good (90-94)'}
+                    </span>
+                  ) : scoreCategory === 'needs-improvement' ? (
+                    <span className="badge badge-warning" style={{ padding: '4px 12px', gap: '5px' }}>
+                      <AlertTriangle size={12} /> {strategy === 'mobile' ? 'Needs Work (50-69)' : 'Needs Work (50-89)'}
                     </span>
                   ) : (
-                    <span className="badge badge-danger" style={{ padding: '4px 10px' }}>
-                      ● Poor (0-49)
+                    <span className="badge badge-danger" style={{ padding: '4px 12px', gap: '5px' }}>
+                      <AlertCircle size={12} /> Poor (0-49)
                     </span>
                   )}
                 </div>
@@ -462,33 +483,66 @@ export function Performance() {
                 </div>
 
                 <h3 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 600, color: 'var(--ink)' }}>
-                  {score >= 90
-                    ? 'Excellent Mobile & Desktop Speed'
-                    : score >= 50
+                  {scoreCategory === 'perfect'
+                    ? `Outstanding ${strategy === 'mobile' ? 'Mobile' : 'Desktop'} Speed — Perfect Score!`
+                    : scoreCategory === 'good'
+                    ? `Good ${strategy === 'mobile' ? 'Mobile' : 'Desktop'} Performance — Passes Targets (${strategy === 'mobile' ? '70+' : '90+'})`
+                    : scoreCategory === 'needs-improvement'
                     ? 'Average User Experience — Optimizations Available'
                     : 'Suboptimal Speed — Immediate Attention Recommended'}
                 </h3>
 
                 <p style={{ margin: '0 0 16px', fontSize: '13px', color: 'var(--muted)', lineHeight: '1.5', maxWidth: '640px' }}>
-                  {score >= 90
-                    ? `The website ${report.url} delivers exceptional responsiveness and passes Google Core Web Vitals thresholds comfortably for ${strategy} users.`
-                    : `Core Web Vitals reveal opportunities to improve time-to-first-byte, optimize heavy JavaScript execution, and streamline critical rendering path assets.`}
+                  {scoreCategory === 'perfect'
+                    ? `The website ${report.url} delivers industry-leading loading and responsiveness, surpassing all Core Web Vitals thresholds for ${strategy} users.`
+                    : scoreCategory === 'good'
+                    ? `The website ${report.url} delivers good responsiveness above ${strategy === 'mobile' ? '70/100' : '90/100'} and provides a smooth browsing experience for ${strategy} visitors.`
+                    : scoreCategory === 'needs-improvement'
+                    ? `Core Web Vitals reveal opportunities to improve time-to-first-byte, optimize heavy JavaScript execution, and streamline critical rendering path assets.`
+                    : `Significant blocking resources and rendering delays are impacting user experience and potential search ranking signals.`}
                 </p>
 
-                {/* Score Scale Legend */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '18px', fontSize: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--green-accent)' }} />
-                    <span style={{ color: 'var(--ink)' }}>90-100 Good</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b' }} />
-                    <span style={{ color: 'var(--ink)' }}>50-89 Needs Work</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--coral)' }} />
-                    <span style={{ color: 'var(--ink)' }}>0-49 Poor</span>
-                  </div>
+                {/* Score Scale Legend with Strategy-Specific Conditions */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', flexWrap: 'wrap' }}>
+                  {strategy === 'mobile' ? (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981' }} />
+                        <span style={{ color: 'var(--ink)', fontWeight: 600 }}>85-100 Perfect</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--brand-green)' }} />
+                        <span style={{ color: 'var(--ink)' }}>70-84 Good</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b' }} />
+                        <span style={{ color: 'var(--ink)' }}>50-69 Needs Work</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--coral)' }} />
+                        <span style={{ color: 'var(--ink)' }}>0-49 Poor</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981' }} />
+                        <span style={{ color: 'var(--ink)', fontWeight: 600 }}>95-100 Perfect</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--brand-green)' }} />
+                        <span style={{ color: 'var(--ink)' }}>90-94 Good</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b' }} />
+                        <span style={{ color: 'var(--ink)' }}>50-89 Needs Work</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--coral)' }} />
+                        <span style={{ color: 'var(--ink)' }}>0-49 Poor</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
