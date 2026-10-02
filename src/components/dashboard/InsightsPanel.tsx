@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Badge } from '../ui/Badge';
 import { Card } from '../ui/Card';
+import { Sparkles, X, Filter } from 'lucide-react';
 
 interface InsightItem {
   id: string;
@@ -42,29 +43,60 @@ export function InsightsPanel() {
   const [filter, setFilter] = useState<'all' | 'opportunity' | 'win' | 'warning'>('all');
   const [dismissed, setDismissed] = useState<string[]>([]);
 
-  const filtered = defaultInsights
-    .filter((item) => !dismissed.includes(item.id))
-    .filter((item) => (filter === 'all' ? true : item.category === filter));
+  const activeInsights = defaultInsights.filter((item) => !dismissed.includes(item.id));
+  const filtered = activeInsights.filter(
+    (item) => (filter === 'all' ? true : item.category === filter)
+  );
 
   return (
     <Card
-      title="Automated intelligence"
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Sparkles size={18} color="var(--brand)" />
+          <span>Automated Intelligence</span>
+        </div>
+      }
       action={
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <button
-            type="button"
-            className="text-button"
-            onClick={() => setFilter(filter === 'all' ? 'opportunity' : 'all')}
-          >
-            {filter === 'all' ? 'Filter' : 'Show all'}
-          </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {/* Modern Pill Dropdown Filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <select
+              className="pill-select"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as any)}
+              aria-label="Filter automated intelligence"
+              style={{
+                padding: '6px 14px',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <option value="all">All Insights ({activeInsights.length})</option>
+              <option value="win">Growth Wins</option>
+              <option value="opportunity">SEO Opportunities</option>
+              <option value="warning">Attention Needed</option>
+            </select>
+          </div>
+
+          {dismissed.length > 0 && (
+            <button
+              type="button"
+              className="button button-secondary"
+              style={{ padding: '6px 12px', fontSize: '11px', borderRadius: 'var(--radius-pill)' }}
+              onClick={() => setDismissed([])}
+              title="Restore all dismissed insights"
+            >
+              Restore ({dismissed.length})
+            </button>
+          )}
         </div>
       }
     >
       <div className="insights-list">
         {filtered.length > 0 ? (
           filtered.map((insight) => (
-            <article className="insight" key={insight.id}>
+            <article className={`insight insight-${insight.category}`} key={insight.id}>
               <div className="insight-heading">
                 <Badge
                   tone={
@@ -85,18 +117,19 @@ export function InsightsPanel() {
                   <span className="insight-date">{insight.date}</span>
                   <button
                     type="button"
+                    className="icon-circle-btn"
                     style={{
-                      border: 0,
+                      width: '24px',
+                      height: '24px',
+                      border: 'none',
                       background: 'transparent',
                       color: 'var(--muted)',
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      padding: 0,
                     }}
                     title="Dismiss insight"
                     onClick={() => setDismissed([...dismissed, insight.id])}
+                    aria-label={`Dismiss ${insight.title}`}
                   >
-                    ×
+                    <X size={13} />
                   </button>
                 </div>
               </div>
@@ -104,7 +137,7 @@ export function InsightsPanel() {
               <p>{insight.detail}</p>
               <div
                 style={{
-                  marginTop: '6px',
+                  marginTop: '8px',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
@@ -113,7 +146,7 @@ export function InsightsPanel() {
                 <span
                   style={{
                     fontSize: '11px',
-                    fontWeight: 600,
+                    fontWeight: 700,
                     color: insight.category === 'warning' ? 'var(--coral)' : 'var(--green)',
                   }}
                 >
@@ -123,8 +156,22 @@ export function InsightsPanel() {
             </article>
           ))
         ) : (
-          <div style={{ textAlign: 'center', padding: '18px 0', color: 'var(--muted)' }}>
-            All insights reviewed for this period.
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '28px 16px',
+              color: 'var(--muted)',
+              fontSize: '13px',
+              background: 'var(--paper-soft)',
+              borderRadius: 'var(--radius-sm)',
+            }}
+          >
+            <Sparkles size={24} color="var(--brand)" style={{ marginBottom: '8px', opacity: 0.6 }} />
+            <p style={{ margin: 0, fontWeight: 500 }}>
+              {dismissed.length === defaultInsights.length
+                ? 'All automated insights have been reviewed.'
+                : `No "${filter}" insights found for this period.`}
+            </p>
           </div>
         )}
       </div>

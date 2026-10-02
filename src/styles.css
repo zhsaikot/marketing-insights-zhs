@@ -1013,20 +1013,55 @@ button {
 }
 
 .insight {
-  border-left: 3px solid var(--green-accent);
-  padding: 12px 14px;
+  border-left: 3px solid var(--green);
+  padding: 14px 16px;
   background: var(--paper-soft);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+}
+
+.insight.insight-win {
+  border-left-color: var(--green);
+}
+
+.insight.insight-opportunity {
+  border-left-color: var(--yellow);
+}
+
+.insight.insight-warning {
+  border-left-color: var(--coral);
 }
 
 .insight:hover {
   background: #ffffff;
   box-shadow: var(--shadow-xs);
+  transform: translateY(-1px);
 }
 
-.insight:nth-child(2) {
-  border-color: var(--yellow);
+.text-button {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-xs);
+}
+
+.text-button:hover {
+  background: var(--paper-soft);
+  border-color: var(--muted-light);
+}
+
+.text-button:focus {
+  outline: none;
+  border-color: var(--green);
 }
 
 .insight-heading {
