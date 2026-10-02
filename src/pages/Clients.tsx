@@ -19,6 +19,7 @@ import {
   Sparkles,
   Check,
   ShieldAlert,
+  Pencil,
 } from 'lucide-react';
 
 interface ClientsProps {
@@ -41,6 +42,17 @@ export function Clients({ user, onRoleSwitch }: ClientsProps) {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'admin' | 'editor' | 'viewer'>('viewer');
   const [message, setMessage] = useState<string | null>(null);
+
+  // Edit Client Modal state
+  const [editingClient, setEditingClient] = useState<ClientEntity | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editWebsite, setEditWebsite] = useState('');
+  const [editPropertyId, setEditPropertyId] = useState('');
+  const [editStatus, setEditStatus] = useState<'healthy' | 'review' | 'attention'>('healthy');
+  const [editRole, setEditRole] = useState<'admin' | 'editor' | 'viewer'>('viewer');
+  const [editSessions, setEditSessions] = useState('');
+  const [editConversions, setEditConversions] = useState('');
+  const [editMessage, setEditMessage] = useState<string | null>(null);
 
   const handleCreateClient = (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,6 +105,57 @@ export function Clients({ user, onRoleSwitch }: ClientsProps) {
       setActiveId(updated[0].id);
       setActiveClientId(updated[0].id);
     }
+  };
+
+  const handleOpenEdit = (client: ClientEntity) => {
+    if (isViewer) return;
+    setEditingClient(client);
+    setEditName(client.name);
+    setEditWebsite(client.website);
+    setEditPropertyId(client.propertyId || '');
+    setEditStatus(client.status);
+    setEditRole(client.role);
+    setEditSessions(client.monthlySessions);
+    setEditConversions(client.monthlyConversions);
+    setEditMessage(null);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isViewer || !editingClient || !editName.trim()) return;
+
+    const rawWebsite = editWebsite.trim();
+    const formattedWebsite = rawWebsite
+      ? rawWebsite.startsWith('http://') || rawWebsite.startsWith('https://')
+        ? rawWebsite
+        : `https://${rawWebsite}`
+      : 'https://example.com';
+
+    const updated = clients.map((c) => {
+      if (c.id === editingClient.id) {
+        return {
+          ...c,
+          name: editName.trim(),
+          website: formattedWebsite,
+          propertyId: editPropertyId.trim() || undefined,
+          status: editStatus,
+          role: editRole,
+          monthlySessions: editSessions.trim() || c.monthlySessions,
+          monthlyConversions: editConversions.trim() || c.monthlyConversions,
+          lastSynced: 'Just now',
+        };
+      }
+      return c;
+    });
+
+    setClients(updated);
+    saveStoredClients(updated);
+    setEditMessage(`Client "${editName.trim()}" updated successfully!`);
+
+    setTimeout(() => {
+      setEditingClient(null);
+      setEditMessage(null);
+    }, 800);
   };
 
   const handleSelectWorkspace = (clientId: string) => {
@@ -345,7 +408,7 @@ export function Clients({ user, onRoleSwitch }: ClientsProps) {
                     {client.name.slice(0, 1).toUpperCase()}
                   </div>
                   <div className="client-item-header">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <h3 className="client-item-title">{client.name}</h3>
                       {isCurrent && (
                         <span className="badge badge-positive" style={{ fontSize: '10px' }}>
@@ -353,22 +416,49 @@ export function Clients({ user, onRoleSwitch }: ClientsProps) {
                         </span>
                       )}
                     </div>
-                    <a
-                      href={client.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="client-item-link"
-                    >
-                      <span>{client.website.replace(/^https?:\/\//, '')}</span>
-                      <ExternalLink size={12} />
-                    </a>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <a
+                        href={client.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="client-item-link"
+                      >
+                        <span>{client.website.replace(/^https?:\/\//, '')}</span>
+                        <ExternalLink size={12} />
+                      </a>
+                      {client.propertyId && (
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            color: 'var(--muted)',
+                            background: 'rgba(15, 23, 42, 0.05)',
+                            padding: '1px 6px',
+                            borderRadius: '4px',
+                            fontFamily: 'monospace',
+                          }}
+                          title={`GA4 Property ID: ${client.propertyId}`}
+                        >
+                          GA4: {client.propertyId}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <span
-                    className={`badge ${client.status === 'healthy' ? 'badge-positive' : 'badge-warning'}`}
+                    className={`badge ${
+                      client.status === 'healthy'
+                        ? 'badge-positive'
+                        : client.status === 'attention'
+                        ? 'badge-critical'
+                        : 'badge-warning'
+                    }`}
                     style={{ fontSize: '10px' }}
                   >
-                    {client.status === 'healthy' ? '● Healthy' : '● Needs Review'}
+                    {client.status === 'healthy'
+                      ? '● Healthy'
+                      : client.status === 'attention'
+                      ? '● Action Required'
+                      : '● Needs Review'}
                   </span>
                 </div>
 
@@ -430,16 +520,28 @@ export function Clients({ user, onRoleSwitch }: ClientsProps) {
                 </div>
 
                 {!isViewer && (
-                  <button
-                    type="button"
-                    className="icon-circle-btn"
-                    style={{ width: '34px', height: '34px', color: 'var(--coral)' }}
-                    onClick={() => handleDeleteClient(client.id)}
-                    title="Delete client account"
-                    aria-label="Delete client"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <button
+                      type="button"
+                      className="icon-circle-btn"
+                      style={{ width: '34px', height: '34px', color: 'var(--brand)' }}
+                      onClick={() => handleOpenEdit(client)}
+                      title={`Edit ${client.name} details`}
+                      aria-label={`Edit ${client.name}`}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-circle-btn"
+                      style={{ width: '34px', height: '34px', color: 'var(--coral)' }}
+                      onClick={() => handleDeleteClient(client.id)}
+                      title="Delete client account"
+                      aria-label="Delete client"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -575,6 +677,273 @@ export function Clients({ user, onRoleSwitch }: ClientsProps) {
                 </button>
                 <button type="submit" className="button button-primary">
                   Create Workspace
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Client Modern Modal Dialog */}
+      {editingClient && !isViewer && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.45)',
+            display: 'grid',
+            placeItems: 'center',
+            zIndex: 100,
+            padding: '20px',
+            backdropFilter: 'blur(4px)',
+          }}
+          onClick={() => setEditingClient(null)}
+        >
+          <div
+            className="card"
+            style={{
+              width: 'min(100%, 540px)',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '28px',
+              borderRadius: '24px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '18px',
+                borderBottom: '1px solid var(--line)',
+                paddingBottom: '14px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  className="sociafy-metric-badge green"
+                  style={{ width: '38px', height: '38px' }}
+                >
+                  <Pencil size={18} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--ink)' }}>
+                    Edit Client Workspace
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '12px', color: 'var(--muted)' }}>
+                    Modify client domain, property ID, targets & access
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="icon-circle-btn"
+                style={{ width: '32px', height: '32px' }}
+                onClick={() => setEditingClient(null)}
+                aria-label="Close edit modal"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} style={{ display: 'grid', gap: '15px' }}>
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    marginBottom: '6px',
+                    color: 'var(--ink)',
+                  }}
+                >
+                  Brand or Company Name *
+                </label>
+                <input
+                  required
+                  className="input"
+                  style={{ width: '100%' }}
+                  placeholder="e.g. Apex Digital Commerce"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    marginBottom: '4px',
+                    color: 'var(--ink)',
+                  }}
+                >
+                  Website Property URL *
+                </label>
+                <span
+                  style={{
+                    display: 'block',
+                    fontSize: '11px',
+                    color: 'var(--muted)',
+                    marginBottom: '6px',
+                  }}
+                >
+                  Used directly for live Google PageSpeed audits and domain monitoring
+                </span>
+                <input
+                  required
+                  className="input"
+                  style={{ width: '100%' }}
+                  placeholder="https://example.com"
+                  value={editWebsite}
+                  onChange={(e) => setEditWebsite(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      marginBottom: '6px',
+                      color: 'var(--ink)',
+                    }}
+                  >
+                    GA4 Property ID
+                  </label>
+                  <input
+                    className="input"
+                    style={{ width: '100%' }}
+                    placeholder="e.g. 384920184"
+                    value={editPropertyId}
+                    onChange={(e) => setEditPropertyId(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      marginBottom: '6px',
+                      color: 'var(--ink)',
+                    }}
+                  >
+                    Access Role Level
+                  </label>
+                  <select
+                    className="select"
+                    style={{ width: '100%' }}
+                    value={editRole}
+                    onChange={(e) => setEditRole(e.target.value as 'admin' | 'editor' | 'viewer')}
+                  >
+                    <option value="admin">Admin (Full Control)</option>
+                    <option value="editor">Editor (Reports & Data)</option>
+                    <option value="viewer">Viewer (Read-Only)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    marginBottom: '6px',
+                    color: 'var(--ink)',
+                  }}
+                >
+                  Workspace Status
+                </label>
+                <select
+                  className="select"
+                  style={{ width: '100%' }}
+                  value={editStatus}
+                  onChange={(e) =>
+                    setEditStatus(e.target.value as 'healthy' | 'review' | 'attention')
+                  }
+                >
+                  <option value="healthy">● Healthy (Active Data Sync)</option>
+                  <option value="review">● Needs Review (Warning)</option>
+                  <option value="attention">● Action Required (Critical)</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      marginBottom: '6px',
+                      color: 'var(--ink)',
+                    }}
+                  >
+                    Monthly Sessions Goal
+                  </label>
+                  <input
+                    className="input"
+                    style={{ width: '100%' }}
+                    placeholder="e.g. 142,500"
+                    value={editSessions}
+                    onChange={(e) => setEditSessions(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      marginBottom: '6px',
+                      color: 'var(--ink)',
+                    }}
+                  >
+                    Monthly Conversions Goal
+                  </label>
+                  <input
+                    className="input"
+                    style={{ width: '100%' }}
+                    placeholder="e.g. 4,890"
+                    value={editConversions}
+                    onChange={(e) => setEditConversions(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {editMessage && (
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    background: '#ecfdf5',
+                    borderRadius: '10px',
+                    color: 'var(--green)',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                  }}
+                >
+                  ✓ {editMessage}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={() => setEditingClient(null)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="button button-primary">
+                  Save Changes
                 </button>
               </div>
             </form>
