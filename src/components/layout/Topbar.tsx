@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { AuthUser } from '../../types';
 import { getStoredClients, getActiveClientId, setActiveClientId } from '../../utils/clients';
 import { Search, Bell, LogOut, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
+import { ThemeToggle } from '../ui/ThemeToggle';
 
 interface TopbarProps {
   title: string;
@@ -91,6 +92,9 @@ export function Topbar({
         >
           <Bell size={17} />
         </button>
+
+        {/* Dark / Light Mode Toggle Button */}
+        <ThemeToggle />
 
         {/* User Account Profile Pill (Sociafy Style) */}
         <div

@@ -53,6 +53,164 @@
   background: var(--paper);
 }
 
+/* ===================================================================
+   Dark Theme System (Luxury Deep Slate & Cyber Emerald)
+   =================================================================== */
+[data-theme='dark'],
+html.dark {
+  /* Core Brand Emerald Palette for Dark Backgrounds */
+  --green: #10b981;
+  --brand-green: #10b981;
+  --green-hover: #059669;
+  --green-light: rgba(16, 185, 129, 0.15);
+  --green-mint: rgba(16, 185, 129, 0.25);
+  --green-accent: #34d399;
+  --green-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  --green-gradient-hover: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  --green-glow: 0 8px 24px -4px rgba(16, 185, 129, 0.5);
+
+  /* Secondary Accents */
+  --coral: #fb7185;
+  --coral-light: rgba(244, 63, 94, 0.15);
+  --yellow: #fbbf24;
+  --yellow-light: rgba(245, 158, 11, 0.15);
+  --purple: #a78bfa;
+  --purple-light: rgba(139, 92, 246, 0.15);
+  --blue: #38bdf8;
+  --blue-light: rgba(14, 165, 233, 0.15);
+
+  /* Atmospheric Neutrals & Surfaces */
+  --ink: #f8fafc;
+  --ink-secondary: #cbd5e1;
+  --muted: #94a3b8;
+  --muted-light: #64748b;
+  --line: #1e293b;
+  --line-subtle: #162032;
+  --paper: #0b0f19;          /* Deep luxury slate canvas */
+  --paper-soft: #131b2e;     /* Sub-surface / row hovers */
+  --white: #0f172a;          /* Card & container dark surface */
+  --sidebar-bg: #0b1120;     /* Sidebar contrast surface */
+
+  /* Deep Multi-layered Ambient Shadows */
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 3px 12px -1px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 10px 30px -4px rgba(0, 0, 0, 0.65), 0 2px 8px -2px rgba(0, 0, 0, 0.45);
+  --shadow-hover: 0 18px 40px -6px rgba(0, 0, 0, 0.75), 0 4px 12px -2px rgba(0, 0, 0, 0.5);
+  --shadow-pill: 0 4px 16px rgba(16, 185, 129, 0.4);
+}
+
+/* Global Smooth Dark <-> Light Mode Transitions */
+html {
+  transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body,
+.card,
+.topbar,
+.sidebar,
+.pill-segmented-control,
+.pill-select,
+.input,
+.select,
+.insight,
+.metric-card,
+.sociafy-metric-card,
+.client-item-card,
+.report-item-card,
+.table-wrap,
+.button-secondary,
+.account-profile-pill,
+.search-pill-wrapper,
+.search-pill-input {
+  transition: background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===================================================================
+   Theme Toggle Button & Animated Glow Effects
+   =================================================================== */
+.theme-toggle-btn {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: var(--shadow-xs);
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  outline: none;
+  overflow: hidden;
+}
+
+.theme-toggle-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 3D Spin / Spring Animation on Click */
+.theme-toggle-inner.spin-effect {
+  animation: themeIconSpin 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes themeIconSpin {
+  0% {
+    transform: rotate(0deg) scale(0.6);
+    opacity: 0.4;
+  }
+  60% {
+    transform: rotate(380deg) scale(1.25);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Light Mode: Warm Golden Solar Aura */
+.theme-toggle-btn.is-light {
+  color: #f59e0b;
+  border-color: #fed7aa;
+  background: #ffffff;
+}
+
+.theme-toggle-btn.is-light:hover {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.4), 0 2px 6px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px) scale(1.06);
+}
+
+/* Dark Mode: Radiant Celestial Lunar Glow */
+.theme-toggle-btn.is-dark {
+  color: #c084fc;
+  border-color: #3b2866;
+  background: #17112b;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.25);
+}
+
+.theme-toggle-btn.is-dark:hover {
+  border-color: #c084fc;
+  background: #251642;
+  box-shadow: 0 0 20px rgba(192, 132, 252, 0.5), 0 0 35px rgba(147, 51, 234, 0.3);
+  transform: translateY(-2px) scale(1.06);
+}
+
+.theme-toggle-btn:active {
+  transform: scale(0.92);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -275,9 +433,9 @@ button {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--white);
   color: #0d7656;
-  border: 2px solid #ffffff;
+  border: 2px solid var(--white);
   display: grid;
   place-items: center;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
@@ -366,7 +524,7 @@ button {
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--white);
   display: grid;
   place-items: center;
   margin-bottom: 12px;
@@ -596,7 +754,7 @@ button {
    =================================================================== */
 .card {
   background: var(--white);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  border: 1px solid var(--line);
   border-radius: var(--radius-card);
   padding: 24px;
   box-shadow: var(--shadow-card);
@@ -619,7 +777,7 @@ button {
 
 .sociafy-metric-card {
   background: var(--white);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  border: 1px solid var(--line);
   border-radius: var(--radius-card);
   padding: 22px 24px;
   box-shadow: var(--shadow-card);
@@ -801,7 +959,7 @@ button {
 /* Segmented Control Switcher (Channels) */
 .pill-segmented-control {
   display: flex;
-  background: #ffffff;
+  background: var(--white);
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
   padding: 4px;
@@ -1274,7 +1432,7 @@ tr:hover td {
 
 .report-item-card {
   background: var(--white);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  border: 1px solid var(--line);
   border-radius: var(--radius-card);
   padding: 24px;
   box-shadow: var(--shadow-card);
@@ -1429,7 +1587,7 @@ tr:hover td {
 
 .client-item-card {
   background: var(--white);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  border: 1px solid var(--line);
   border-radius: var(--radius-card);
   padding: 24px;
   box-shadow: var(--shadow-card);
