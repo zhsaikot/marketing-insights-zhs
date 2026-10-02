@@ -161,14 +161,21 @@ export function Sidebar({
           </button>
         </div>
       ) : (
-        <div
-          className="sidebar-promo-collapsed"
-          onClick={() => onNavigate('clients')}
-          title={`${activeClient?.name || 'Workspace'} • ${clients.length} active client${clients.length === 1 ? '' : 's'}`}
-          role="button"
-          tabIndex={0}
-        >
-          <Sparkles size={18} color="var(--brand-green)" />
+        <div className="sidebar-collapsed-workspace-wrap">
+          <button
+            type="button"
+            className="sidebar-collapsed-workspace-btn"
+            onClick={() => onNavigate('clients')}
+            title={`Active Workspace: ${activeClient?.name || 'Northstar Agency'} (${clients.length} clients) • Click to switch`}
+            aria-label="Manage workspaces"
+          >
+            <div className="collapsed-workspace-avatar">
+              {activeClient?.name ? activeClient.name.charAt(0).toUpperCase() : 'A'}
+            </div>
+            <div className="collapsed-workspace-dot" title="Workspace Active">
+              <Sparkles size={9} color="#0d7656" />
+            </div>
+          </button>
         </div>
       )}
     </aside>

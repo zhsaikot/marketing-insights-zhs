@@ -3,6 +3,7 @@
 :root {
   /* Core Brand Emerald / Forest Green Palette */
   --green: #0d7656;
+  --brand-green: #0d7656;
   --green-hover: #095941;
   --green-light: #ecfdf5;
   --green-mint: #cdebdc;
@@ -86,6 +87,7 @@ button {
 .sidebar {
   width: 260px;
   height: 100vh;
+  box-sizing: border-box;
   position: sticky;
   top: 0;
   left: 0;
@@ -198,7 +200,8 @@ button {
 /* Collapsed Sidebar Mode */
 .sidebar.is-collapsed {
   width: 76px;
-  padding: 24px 10px;
+  padding: 20px 10px 20px;
+  box-sizing: border-box;
 }
 
 .sidebar.is-collapsed .brand-container {
@@ -218,25 +221,66 @@ button {
   height: 20px;
 }
 
-.sidebar-promo-collapsed {
+/* Sidebar Bottom Collapsed Workspace Avatar Button */
+.sidebar-collapsed-workspace-wrap {
   margin-top: auto;
+  padding: 12px 0 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.sidebar-collapsed-workspace-btn {
+  position: relative;
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: #f0fdf4;
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
   display: grid;
   place-items: center;
-  align-self: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.12);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.sidebar-promo-collapsed:hover {
+.sidebar-collapsed-workspace-btn:hover {
   transform: translateY(-2px);
-  background: #dcfce7;
-  border-color: var(--green);
+}
+
+.collapsed-workspace-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: var(--green-gradient);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  border: 2px solid #ffffff;
+  transition: all 0.2s;
+}
+
+.sidebar-collapsed-workspace-btn:hover .collapsed-workspace-avatar {
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
+}
+
+.collapsed-workspace-dot {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #0d7656;
+  border: 2px solid #ffffff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
 .nav-section {
