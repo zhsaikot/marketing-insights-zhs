@@ -30,16 +30,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://gitlab.com/zhsaikot/marketing-insghts-zhs.git"
+    "url": "git+https://github.com/zhsaikot/marketing-insights-zhs.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "bugs": {
-    "url": "https://gitlab.com/zhsaikot/marketing-insghts-zhs/issues"
+    "url": "https://github.com/zhsaikot/marketing-insights-zhs/issues"
   },
-  "homepage": "https://gitlab.com/zhsaikot/marketing-insghts-zhs#readme",
+  "homepage": "https://github.com/zhsaikot/marketing-insights-zhs#readme",
   "devDependencies": {
     "@types/node": "^26.6.2",
     "@types/react": "^18.3.12",
