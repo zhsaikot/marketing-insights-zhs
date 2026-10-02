@@ -145,8 +145,23 @@ export function Sidebar({
       {/* Lower Promo / Workspace Status Card */}
       {!collapsed ? (
         <div className="sidebar-promo-card">
-          <div className="sidebar-promo-badge">
-            <Sparkles size={20} />
+          <div
+            className="sidebar-promo-badge"
+            style={{
+              overflow: 'hidden',
+              background: activeClient?.logo ? '#ffffff' : undefined,
+              padding: activeClient?.logo ? '2px' : undefined,
+            }}
+          >
+            {activeClient?.logo ? (
+              <img
+                src={activeClient.logo}
+                alt={activeClient.name}
+                style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 'inherit' }}
+              />
+            ) : (
+              <Sparkles size={20} />
+            )}
           </div>
           <h4 className="sidebar-promo-title">{activeClient?.name || 'Northstar Agency'}</h4>
           <p className="sidebar-promo-text">
@@ -169,8 +184,18 @@ export function Sidebar({
             title={`Active Workspace: ${activeClient?.name || 'Northstar Agency'} (${clients.length} clients) • Click to switch`}
             aria-label="Manage workspaces"
           >
-            <div className="collapsed-workspace-avatar">
-              {activeClient?.name ? activeClient.name.charAt(0).toUpperCase() : 'A'}
+            <div className="collapsed-workspace-avatar" style={{ overflow: 'hidden' }}>
+              {activeClient?.logo ? (
+                <img
+                  src={activeClient.logo}
+                  alt={activeClient.name}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                />
+              ) : activeClient?.name ? (
+                activeClient.name.charAt(0).toUpperCase()
+              ) : (
+                'A'
+              )}
             </div>
             <div className="collapsed-workspace-dot" title="Workspace Active">
               <Sparkles size={9} color="#0d7656" />

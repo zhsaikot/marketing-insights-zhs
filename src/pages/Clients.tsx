@@ -20,6 +20,7 @@ import {
   Check,
   ShieldAlert,
   Pencil,
+  Upload,
 } from 'lucide-react';
 
 interface ClientsProps {
@@ -48,6 +49,7 @@ export function Clients({ user, onRoleSwitch }: ClientsProps) {
   const [editName, setEditName] = useState('');
   const [editWebsite, setEditWebsite] = useState('');
   const [editPropertyId, setEditPropertyId] = useState('');
+  const [editLogo, setEditLogo] = useState<string>('');
   const [editStatus, setEditStatus] = useState<'healthy' | 'review' | 'attention'>('healthy');
   const [editRole, setEditRole] = useState<'admin' | 'editor' | 'viewer'>('viewer');
   const [editSessions, setEditSessions] = useState('');
@@ -113,11 +115,30 @@ export function Clients({ user, onRoleSwitch }: ClientsProps) {
     setEditName(client.name);
     setEditWebsite(client.website);
     setEditPropertyId(client.propertyId || '');
+    setEditLogo(client.logo || '');
     setEditStatus(client.status);
     setEditRole(client.role);
     setEditSessions(client.monthlySessions);
     setEditConversions(client.monthlyConversions);
     setEditMessage(null);
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Logo image size should be less than 2MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (typeof event.target?.result === 'string') {
+        setEditLogo(event.target.result);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {
@@ -138,6 +159,7 @@ export function Clients({ user, onRoleSwitch }: ClientsProps) {
           name: editName.trim(),
           website: formattedWebsite,
           propertyId: editPropertyId.trim() || undefined,
+          logo: editLogo.trim() || undefined,
           status: editStatus,
           role: editRole,
           monthlySessions: editSessions.trim() || c.monthlySessions,
@@ -404,8 +426,32 @@ export function Clients({ user, onRoleSwitch }: ClientsProps) {
               <div>
                 {/* Card Top: Avatar + Title + Status */}
                 <div className="client-item-top">
-                  <div className={`client-item-avatar ${gradientClass}`}>
-                    {client.name.slice(0, 1).toUpperCase()}
+                  <div
+                    className={`client-item-avatar ${gradientClass}`}
+                    style={{
+                      overflow: 'hidden',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: client.logo ? '#ffffff' : undefined,
+                      border: client.logo ? '1px solid var(--line)' : undefined,
+                      padding: client.logo ? '3px' : 0,
+                    }}
+                  >
+                    {client.logo ? (
+                      <img
+                        src={client.logo}
+                        alt={`${client.name} logo`}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                          borderRadius: 'inherit',
+                        }}
+                      />
+                    ) : (
+                      client.name.slice(0, 1).toUpperCase()
+                    )}
                   </div>
                   <div className="client-item-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -748,6 +794,134 @@ export function Clients({ user, onRoleSwitch }: ClientsProps) {
             </div>
 
             <form onSubmit={handleSaveEdit} style={{ display: 'grid', gap: '15px' }}>
+              {/* Brand Logo Upload & Preview Section */}
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    marginBottom: '6px',
+                    color: 'var(--ink)',
+                  }}
+                >
+                  Brand Avatar / Logo
+                </label>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    padding: '14px 16px',
+                    background: '#f8fafc',
+                    borderRadius: '16px',
+                    border: '1px dashed var(--line)',
+                  }}
+                >
+                  {/* Live Avatar / Logo Preview */}
+                  <div
+                    style={{
+                      width: '58px',
+                      height: '58px',
+                      borderRadius: '14px',
+                      background: editLogo ? '#ffffff' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      border: editLogo ? '1px solid var(--line)' : 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                      flexShrink: 0,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                      padding: editLogo ? '4px' : 0,
+                    }}
+                  >
+                    {editLogo ? (
+                      <img
+                        src={editLogo}
+                        alt="Brand Logo preview"
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                      />
+                    ) : (
+                      <span style={{ color: '#ffffff', fontSize: '22px', fontWeight: 700 }}>
+                        {editName ? editName.slice(0, 1).toUpperCase() : 'C'}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Actions & File Picker */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <label
+                        className="button button-secondary"
+                        style={{
+                          cursor: 'pointer',
+                          padding: '6px 14px',
+                          fontSize: '12px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          margin: 0,
+                          fontWeight: 600,
+                        }}
+                      >
+                        <Upload size={14} />
+                        Upload Logo
+                        <input
+                          type="file"
+                          accept="image/png, image/jpeg, image/webp, image/svg+xml, image/gif"
+                          style={{ display: 'none' }}
+                          onChange={handleLogoUpload}
+                        />
+                      </label>
+
+                      {editLogo && (
+                        <button
+                          type="button"
+                          className="button"
+                          style={{
+                            padding: '6px 12px',
+                            fontSize: '12px',
+                            color: 'var(--coral)',
+                            background: '#fee2e2',
+                            border: '1px solid #fecaca',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                          onClick={() => setEditLogo('')}
+                          title="Remove custom logo"
+                        >
+                          <Trash2 size={13} />
+                          Remove
+                        </button>
+                      )}
+                    </div>
+
+                    <div style={{ marginTop: '8px' }}>
+                      <input
+                        className="input"
+                        style={{ width: '100%', fontSize: '11px', padding: '6px 10px' }}
+                        placeholder="Or paste image URL (e.g. https://.../logo.png)"
+                        value={editLogo.startsWith('data:') ? '' : editLogo}
+                        onChange={(e) => setEditLogo(e.target.value)}
+                      />
+                    </div>
+                    <span
+                      style={{
+                        display: 'block',
+                        fontSize: '11px',
+                        color: 'var(--muted)',
+                        marginTop: '4px',
+                      }}
+                    >
+                      Supports PNG, JPG, WebP, SVG (Max 2MB).
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label
                   style={{

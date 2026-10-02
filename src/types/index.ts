@@ -39,6 +39,7 @@ export interface ClientEntity {
   name: string;
   website: string;
   propertyId?: string;
+  logo?: string;
   status: 'healthy' | 'review' | 'attention';
   role: 'admin' | 'editor' | 'viewer';
   lastSynced: string;
