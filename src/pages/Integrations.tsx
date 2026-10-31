@@ -132,7 +132,12 @@ export function Integrations({ user }: IntegrationsProps) {
     if (code) {
       const pendingProvider = (sessionStorage.getItem('oauth_pending_provider') || 'google') as 'google' | 'meta';
       const endpoint = pendingProvider === 'meta' ? '/api/auth-meta' : '/api/auth-google';
-      const redirectUri = window.location.origin + window.location.pathname;
+      const currentOrigin = window.location.origin;
+      const redirectUri =
+        sessionStorage.getItem('oauth_redirect_uri') ||
+        (currentOrigin === 'https://marketing-insights-zhs.vercel.app'
+          ? 'https://marketing-insights-zhs.vercel.app'
+          : `${currentOrigin}/integrations`);
 
       setLoading(true);
       setStatusMessage(`Exchanging ${pendingProvider.toUpperCase()} authorization code for live access token...`);
@@ -158,19 +163,23 @@ export function Integrations({ user }: IntegrationsProps) {
             });
 
             const targetName = pendingProvider === 'meta' ? 'Meta Business & Ads' : 'Google Analytics 4';
+            const accountLabel = data.token.propertyName
+              ? `${data.token.propertyName} (${data.token.account})`
+              : data.token.account || 'Connected';
+
             updateConnectionState(targetName, {
               connected: true,
               method: 'oauth',
-              account: data.token.account,
-              lastSynced: 'Live Token Synced',
+              account: accountLabel,
+              lastSynced: data.token.email ? `Live: ${data.token.email}` : 'Live Token Synced',
             });
 
             if (pendingProvider === 'google') {
               updateConnectionState('Google Search Console', {
                 connected: true,
                 method: 'oauth',
-                account: 'Google Search Console Synced',
-                lastSynced: 'Live Token Synced',
+                account: data.token.siteUrl || 'All Verified Sites',
+                lastSynced: data.token.email ? `Live: ${data.token.email}` : 'Live Token Synced',
               });
             }
 
@@ -183,6 +192,7 @@ export function Integrations({ user }: IntegrationsProps) {
         .finally(() => {
           setLoading(false);
           sessionStorage.removeItem('oauth_pending_provider');
+          sessionStorage.removeItem('oauth_redirect_uri');
           window.history.replaceState({}, document.title, window.location.pathname);
         });
     }
@@ -235,7 +245,14 @@ export function Integrations({ user }: IntegrationsProps) {
         }
       } else {
         // Real OAuth 2.0 flow
-        const res = await fetch(`${endpoint}?redirect_uri=${encodeURIComponent(window.location.href)}`);
+        const currentOrigin = window.location.origin;
+        const redirectUri =
+          currentOrigin === 'https://marketing-insights-zhs.vercel.app'
+            ? 'https://marketing-insights-zhs.vercel.app'
+            : `${currentOrigin}/integrations`;
+
+        sessionStorage.setItem('oauth_redirect_uri', redirectUri);
+        const res = await fetch(`${endpoint}?redirect_uri=${encodeURIComponent(redirectUri)}`);
         const json = await res.json();
 
         if (json.configured && json.authUrl) {

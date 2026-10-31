@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthScreen } from './components/auth/AuthScreen';
 import { AppLayout } from './components/layout/AppLayout';
@@ -49,6 +49,14 @@ function AppRoutes() {
   const auth = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // If redirected back from Google/Meta OAuth to root or any page, route to /integrations
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('code') && location.pathname !== '/integrations') {
+      navigate(`/integrations${location.search}`, { replace: true });
+    }
+  }, [location, navigate]);
 
   if (!auth.user) {
     return (
