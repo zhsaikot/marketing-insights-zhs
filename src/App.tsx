@@ -9,6 +9,7 @@ import './styles.css';
 // Code-split route pages with React.lazy
 const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })));
 const Performance = lazy(() => import('./pages/Performance').then((m) => ({ default: m.Performance })));
+const SiteAudit = lazy(() => import('./pages/SiteAudit').then((m) => ({ default: m.SiteAudit })));
 const Clients = lazy(() => import('./pages/Clients').then((m) => ({ default: m.Clients })));
 const Integrations = lazy(() => import('./pages/Integrations').then((m) => ({ default: m.Integrations })));
 const Reports = lazy(() => import('./pages/Reports').then((m) => ({ default: m.Reports })));
@@ -73,7 +74,7 @@ function AppRoutes() {
 
   // Derive current page identifier from pathname
   const path = location.pathname.replace(/^\//, '') || 'dashboard';
-  const validPages: Page[] = ['dashboard', 'performance', 'clients', 'integrations', 'reports', 'profile'];
+  const validPages: Page[] = ['dashboard', 'audit', 'performance', 'clients', 'integrations', 'reports', 'profile'];
   const currentPage: Page = validPages.includes(path as Page) ? (path as Page) : 'dashboard';
 
   const handleNavigate = (target: Page) => {
@@ -91,6 +92,7 @@ function AppRoutes() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/dashboard" element={<Navigate to="/" replace />} />
+          <Route path="/audit" element={<SiteAudit />} />
           <Route path="/performance" element={<Performance />} />
           <Route
             path="/clients"

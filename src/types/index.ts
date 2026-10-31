@@ -1,4 +1,4 @@
-export type Page = 'dashboard' | 'clients' | 'integrations' | 'reports' | 'profile' | 'performance';
+export type Page = 'dashboard' | 'clients' | 'integrations' | 'reports' | 'profile' | 'performance' | 'audit';
 
 export type UserRole = 'admin' | 'editor' | 'viewer';
 
@@ -154,5 +154,71 @@ export interface PageSpeedSummary {
   };
   lastChecked: string;
   cached: boolean;
+}
+
+export interface SeoFault {
+  id: string;
+  category: 'meta' | 'headings' | 'images' | 'indexability' | 'security' | 'social' | 'links' | 'performance';
+  severity: 'critical' | 'warning' | 'passed';
+  title: string;
+  description: string;
+  recommendation: string;
+  details?: string[] | Record<string, any>;
+}
+
+export interface DetectedTech {
+  name: string;
+  category: 'analytics' | 'tag_manager' | 'advertising' | 'cms' | 'frontend' | 'security';
+  id?: string;
+  icon?: string;
+  details?: string;
+}
+
+export interface WebsiteAuditReport {
+  url: string;
+  finalUrl: string;
+  hostname: string;
+  auditTime: string;
+  fetchTimeMs: number;
+  overallScore: number;
+  grade: 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
+  summary: {
+    criticalCount: number;
+    warningCount: number;
+    passedCount: number;
+    totalChecks: number;
+  };
+  overview: {
+    title: string;
+    description: string;
+    h1: string;
+    wordCount: number;
+    imageCount: number;
+    imagesMissingAlt: number;
+    internalLinksCount: number;
+    externalLinksCount: number;
+    hasSsl: boolean;
+    hasRobotsTxt: boolean;
+    hasSitemap: boolean;
+    canonicalUrl: string | null;
+    robotsMeta: string | null;
+  };
+  socialPreview: {
+    ogTitle: string | null;
+    ogDescription: string | null;
+    ogImage: string | null;
+    ogUrl: string | null;
+    twitterCard: string | null;
+    twitterImage: string | null;
+  };
+  techStack: DetectedTech[];
+  schemaTypes: string[];
+  faults: SeoFault[];
+  estimatedMetrics: {
+    visibilityScore: number;
+    estimatedMonthlyVisits: string;
+    potentialKeywordReach: string;
+    onPageSeoHealth: string;
+  };
 }
 

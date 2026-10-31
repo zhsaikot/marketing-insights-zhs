@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   getStoredClients,
   saveStoredClients,
@@ -12,6 +13,7 @@ import {
   Activity,
   Target,
   Search,
+  ScanSearch,
   Plus,
   ExternalLink,
   Trash2,
@@ -30,6 +32,7 @@ interface ClientsProps {
 
 export function Clients({ user, onRoleSwitch }: ClientsProps) {
   const isViewer = user.role === 'viewer';
+  const navigate = useNavigate();
 
   const [clients, setClients] = useState<ClientEntity[]>(getStoredClients);
   const [activeId, setActiveId] = useState<string>(getActiveClientId);
@@ -472,6 +475,29 @@ export function Clients({ user, onRoleSwitch }: ClientsProps) {
                         <span>{client.website.replace(/^https?:\/\//, '')}</span>
                         <ExternalLink size={12} />
                       </a>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/audit?url=${encodeURIComponent(client.website)}`);
+                        }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '2px 8px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          borderRadius: '4px',
+                          background: 'rgba(16, 185, 129, 0.12)',
+                          color: 'var(--brand-green, #10b981)',
+                          border: '1px solid rgba(16, 185, 129, 0.25)',
+                          cursor: 'pointer',
+                        }}
+                        title={`Run Instant SEO Audit on ${client.website}`}
+                      >
+                        <ScanSearch size={12} /> Instant Audit
+                      </button>
                       {client.propertyId && (
                         <span
                           style={{

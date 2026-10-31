@@ -3,6 +3,7 @@ import { getStoredClients, getActiveClientId } from '../../utils/clients';
 import {
   LayoutDashboard,
   Gauge,
+  ScanSearch,
   Users,
   Plug,
   FileBarChart,
@@ -24,6 +25,7 @@ interface SidebarProps {
 
 const mainMenu: { id: Page; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
+  { id: 'audit', label: 'Site Audit', icon: ScanSearch },
   { id: 'performance', label: 'Performance', icon: Gauge },
   { id: 'integrations', label: 'Integrations', icon: Plug },
   { id: 'reports', label: 'Reports', icon: FileBarChart },

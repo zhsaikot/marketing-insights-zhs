@@ -13,6 +13,7 @@ import searchConsoleRouter from './routes/search-console.js';
 import metaAdsRouter from './routes/meta-ads.js';
 import tokensRouter from './routes/tokens.js';
 import pagespeedRouter from './routes/pagespeed.js';
+import auditRouter from './routes/audit.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -69,6 +70,7 @@ app.use('/api/search-console', searchConsoleRouter);
 app.use('/api/meta-ads', metaAdsRouter);
 app.use('/api/tokens', tokensRouter);
 app.use('/api/pagespeed', pagespeedRouter);
+app.use('/api/audit', auditRouter);
 
 // Unified Production Static File Serving & SPA Fallback
 const distPath = path.resolve(process.cwd(), 'dist');

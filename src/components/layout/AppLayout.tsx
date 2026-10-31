@@ -20,6 +20,7 @@ export function AppLayout({
 }) {
   const titles: Record<Page, string> = {
     dashboard: 'Performance overview',
+    audit: 'Site Audit & SEO Intelligence',
     performance: 'PageSpeed & Performance',
     clients: 'Clients',
     integrations: 'Integrations',
