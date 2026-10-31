@@ -280,7 +280,9 @@ export function SiteAudit() {
             style={{
               width: '40px',
               height: '40px',
-              border: '3px solid var(--line)',
+              borderWidth: '3px',
+              borderStyle: 'solid',
+              borderColor: 'var(--line)',
               borderTopColor: 'var(--brand-green, #10b981)',
               borderRadius: '50%',
               margin: '0 auto 16px',
