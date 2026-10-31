@@ -836,6 +836,46 @@ button {
   color: #ec4899;
 }
 
+.sociafy-metric-badge.red {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.sociafy-metric-badge.amber {
+  background: #fffbeb;
+  color: #f59e0b;
+}
+
+[data-theme='dark'] .sociafy-metric-badge.green {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+[data-theme='dark'] .sociafy-metric-badge.purple {
+  background: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
+}
+
+[data-theme='dark'] .sociafy-metric-badge.blue {
+  background: rgba(14, 165, 233, 0.15);
+  color: #38bdf8;
+}
+
+[data-theme='dark'] .sociafy-metric-badge.pink {
+  background: rgba(236, 72, 153, 0.15);
+  color: #f472b6;
+}
+
+[data-theme='dark'] .sociafy-metric-badge.red {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+[data-theme='dark'] .sociafy-metric-badge.amber {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
 .sociafy-metric-bottom {
   display: flex;
   flex-direction: column;

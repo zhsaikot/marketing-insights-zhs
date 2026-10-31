@@ -299,122 +299,143 @@ export function SiteAudit() {
       {report && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {/* Section 1: Executive KPI Cards */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-              gap: '16px',
-            }}
-          >
-            {/* Overall Score Card */}
-            <div
-              className="sociafy-metric-card"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderLeft: `4px solid ${getGradeColor(report.grade)}`,
-              }}
-            >
-              <div>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase' }}>
-                  SEO Health Score
-                </span>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '4px' }}>
-                  <span style={{ fontSize: '32px', fontWeight: 800, color: 'var(--ink)' }}>
-                    {report.overallScore}
-                  </span>
-                  <span style={{ fontSize: '14px', color: 'var(--muted)' }}>/ 100</span>
+          <div className="metric-grid">
+            {/* Card 1: Overall SEO Health Score */}
+            <div className="sociafy-metric-card">
+              <div className="sociafy-metric-top">
+                <h4 className="sociafy-metric-label">SEO Health Score</h4>
+                <div
+                  className="sociafy-metric-badge green"
+                  style={{
+                    fontWeight: 800,
+                    fontSize: '15px',
+                    letterSpacing: '-0.5px',
+                  }}
+                  title={`Overall Grade: ${report.grade}`}
+                >
+                  {report.grade}
                 </div>
-                <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
-                  Audit took {(report.fetchTimeMs / 1000).toFixed(2)}s
-                </span>
               </div>
-              <div
-                style={{
-                  width: '54px',
-                  height: '54px',
-                  borderRadius: '16px',
-                  background: `${getGradeColor(report.grade)}18`,
-                  color: getGradeColor(report.grade),
-                  display: 'grid',
-                  placeItems: 'center',
-                  fontSize: '22px',
-                  fontWeight: 800,
-                  border: `1.5px solid ${getGradeColor(report.grade)}40`,
-                }}
-              >
-                {report.grade}
+              <div className="sociafy-metric-bottom">
+                <div className="sociafy-metric-row">
+                  <span className="sociafy-metric-value">{report.overallScore}</span>
+                  <span style={{ fontSize: '14px', color: 'var(--muted)', fontWeight: 600 }}>/ 100</span>
+                  <span
+                    className={`sociafy-pill-trend ${report.overallScore >= 80 ? 'up' : report.overallScore >= 60 ? 'neutral' : 'down'}`}
+                    style={{ marginLeft: 'auto' }}
+                  >
+                    {report.overallScore >= 85
+                      ? 'Grade A+'
+                      : report.overallScore >= 75
+                      ? 'Grade B'
+                      : report.overallScore >= 60
+                      ? 'Grade C'
+                      : 'Needs Work'}
+                  </span>
+                </div>
+                <span className="sociafy-metric-sub">
+                  Audit took {(report.fetchTimeMs / 1000).toFixed(2)}s • {report.summary.totalChecks} checks
+                </span>
               </div>
             </div>
 
-            {/* Critical Issues */}
+            {/* Card 2: Critical Issues */}
             <div
               className="sociafy-metric-card"
-              style={{
-                borderLeft: '4px solid #ef4444',
-                cursor: 'pointer',
-                background: severityFilter === 'critical' ? 'rgba(239, 68, 68, 0.06)' : undefined,
-              }}
               onClick={() => setSeverityFilter(severityFilter === 'critical' ? 'all' : 'critical')}
+              style={{
+                cursor: 'pointer',
+                borderColor: severityFilter === 'critical' ? '#ef4444' : undefined,
+                boxShadow: severityFilter === 'critical' ? '0 0 0 2px rgba(239, 68, 68, 0.25)' : undefined,
+              }}
               title="Click to filter Critical issues"
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: '#ef4444', textTransform: 'uppercase' }}>
-                  Critical Issues
-                </span>
-                <AlertCircle size={18} color="#ef4444" />
+              <div className="sociafy-metric-top">
+                <h4 className="sociafy-metric-label">Critical Issues</h4>
+                <div className="sociafy-metric-badge red">
+                  <AlertCircle size={18} />
+                </div>
               </div>
-              <div style={{ fontSize: '30px', fontWeight: 800, color: 'var(--ink)', marginTop: '4px' }}>
-                {report.summary.criticalCount}
+              <div className="sociafy-metric-bottom">
+                <div className="sociafy-metric-row">
+                  <span
+                    className="sociafy-metric-value"
+                    style={{ color: report.summary.criticalCount > 0 ? '#ef4444' : undefined }}
+                  >
+                    {report.summary.criticalCount}
+                  </span>
+                  <span
+                    className={`sociafy-pill-trend ${report.summary.criticalCount === 0 ? 'up' : 'down'}`}
+                    style={{ marginLeft: 'auto' }}
+                  >
+                    {report.summary.criticalCount === 0 ? 'All Clear' : 'Urgent'}
+                  </span>
+                </div>
+                <span className="sociafy-metric-sub">Immediate attention required</span>
               </div>
-              <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Immediate attention required</span>
             </div>
 
-            {/* Warnings */}
+            {/* Card 3: SEO Warnings */}
             <div
               className="sociafy-metric-card"
-              style={{
-                borderLeft: '4px solid #f59e0b',
-                cursor: 'pointer',
-                background: severityFilter === 'warning' ? 'rgba(245, 158, 11, 0.06)' : undefined,
-              }}
               onClick={() => setSeverityFilter(severityFilter === 'warning' ? 'all' : 'warning')}
+              style={{
+                cursor: 'pointer',
+                borderColor: severityFilter === 'warning' ? '#f59e0b' : undefined,
+                boxShadow: severityFilter === 'warning' ? '0 0 0 2px rgba(245, 158, 11, 0.25)' : undefined,
+              }}
               title="Click to filter Warnings"
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: '#f59e0b', textTransform: 'uppercase' }}>
-                  SEO Warnings
-                </span>
-                <AlertTriangle size={18} color="#f59e0b" />
+              <div className="sociafy-metric-top">
+                <h4 className="sociafy-metric-label">SEO Warnings</h4>
+                <div className="sociafy-metric-badge amber">
+                  <AlertTriangle size={18} />
+                </div>
               </div>
-              <div style={{ fontSize: '30px', fontWeight: 800, color: 'var(--ink)', marginTop: '4px' }}>
-                {report.summary.warningCount}
+              <div className="sociafy-metric-bottom">
+                <div className="sociafy-metric-row">
+                  <span
+                    className="sociafy-metric-value"
+                    style={{ color: report.summary.warningCount > 0 ? '#f59e0b' : undefined }}
+                  >
+                    {report.summary.warningCount}
+                  </span>
+                  <span className="sociafy-pill-trend neutral" style={{ marginLeft: 'auto' }}>
+                    {report.summary.warningCount} to improve
+                  </span>
+                </div>
+                <span className="sociafy-metric-sub">Optimization opportunities</span>
               </div>
-              <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Optimization opportunities</span>
             </div>
 
-            {/* Passed Checks */}
+            {/* Card 4: Passed Checks */}
             <div
               className="sociafy-metric-card"
-              style={{
-                borderLeft: '4px solid #10b981',
-                cursor: 'pointer',
-                background: severityFilter === 'passed' ? 'rgba(16, 185, 129, 0.06)' : undefined,
-              }}
               onClick={() => setSeverityFilter(severityFilter === 'passed' ? 'all' : 'passed')}
+              style={{
+                cursor: 'pointer',
+                borderColor: severityFilter === 'passed' ? 'var(--green)' : undefined,
+                boxShadow: severityFilter === 'passed' ? '0 0 0 2px rgba(16, 185, 129, 0.25)' : undefined,
+              }}
               title="Click to filter Passed checks"
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: '#10b981', textTransform: 'uppercase' }}>
-                  Passed Checks
-                </span>
-                <CheckCircle2 size={18} color="#10b981" />
+              <div className="sociafy-metric-top">
+                <h4 className="sociafy-metric-label">Passed Checks</h4>
+                <div className="sociafy-metric-badge green">
+                  <CheckCircle2 size={18} />
+                </div>
               </div>
-              <div style={{ fontSize: '30px', fontWeight: 800, color: 'var(--ink)', marginTop: '4px' }}>
-                {report.summary.passedCount}
+              <div className="sociafy-metric-bottom">
+                <div className="sociafy-metric-row">
+                  <span className="sociafy-metric-value" style={{ color: 'var(--green)' }}>
+                    {report.summary.passedCount}
+                  </span>
+                  <span className="sociafy-pill-trend up" style={{ marginLeft: 'auto' }}>
+                    {Math.round((report.summary.passedCount / report.summary.totalChecks) * 100)}% Pass
+                  </span>
+                </div>
+                <span className="sociafy-metric-sub">Working as best practice</span>
               </div>
-              <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Working as best practice</span>
             </div>
           </div>
 
