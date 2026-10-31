@@ -580,8 +580,10 @@ button {
   justify-content: space-between;
   gap: 20px;
   align-items: center;
-  padding: 20px 40px;
+  padding: 20px clamp(24px, 3%, 56px);
   background: transparent;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Pill Search Bar */
@@ -712,9 +714,10 @@ button {
    Page Content & Typography
    =================================================================== */
 .page-content {
-  padding: 10px 40px 60px;
-  max-width: 1480px;
+  padding: 10px clamp(24px, 3%, 56px) 60px;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .page-intro {
@@ -1761,10 +1764,11 @@ tr:hover td {
 /* 1. Laptops & Compact Desktops (under 1440px) */
 @media (max-width: 1440px) {
   .topbar {
-    padding: 16px 28px;
+    padding: 16px clamp(18px, 2.5%, 32px);
   }
   .page-content {
-    padding: 18px 28px 36px;
+    padding: 16px clamp(18px, 2.5%, 32px) 36px;
+    max-width: 100%;
   }
   .metric-grid, .reports-kpi-grid, .clients-kpi-grid {
     grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -1789,10 +1793,11 @@ tr:hover td {
     display: grid;
   }
   .topbar {
-    padding: 14px 20px;
+    padding: 14px clamp(16px, 2%, 24px);
   }
   .page-content {
-    padding: 16px 20px 32px;
+    padding: 16px clamp(16px, 2%, 24px) 32px;
+    max-width: 100%;
   }
   .metric-grid, .reports-kpi-grid, .clients-kpi-grid {
     grid-template-columns: repeat(2, 1fr);
