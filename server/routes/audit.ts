@@ -69,6 +69,27 @@ export interface WebsiteAuditReport {
   };
 }
 
+export function getRuleGroup(faultId: string): string {
+  if (faultId.startsWith('title-')) return 'title';
+  if (faultId.startsWith('desc-')) return 'description';
+  if (faultId.startsWith('h1-')) return 'h1';
+  if (faultId.startsWith('images-')) return 'images';
+  if (faultId.startsWith('robots-file-')) return 'robots-file';
+  if (faultId.startsWith('robots-')) return 'robots';
+  if (faultId.startsWith('canonical-')) return 'canonical';
+  if (faultId.startsWith('viewport-')) return 'viewport';
+  if (faultId.startsWith('social-')) return 'social';
+  if (faultId.startsWith('schema-')) return 'schema';
+  if (faultId.startsWith('sitemap-')) return 'sitemap';
+  if (faultId.startsWith('security-')) return 'security';
+  if (faultId.startsWith('content-')) return 'content';
+  return faultId;
+}
+
+export function findFaultByRuleGroup(faults: SeoFault[], group: string): SeoFault | undefined {
+  return faults.find((f) => getRuleGroup(f.id) === group);
+}
+
 function normalizeUrl(input: string): string {
   let url = input.trim();
   if (!url) return 'https://example.com';
@@ -86,6 +107,7 @@ async function probeUrlStatus(url: string, timeoutMs: number = 4000): Promise<{ 
       method: 'GET',
       headers: {
         'User-Agent': 'MarketingInsightsAuditBot/1.0 (+https://marketing-insights.local)',
+        'Cache-Control': 'no-cache, no-store',
       },
       signal: controller.signal,
     });
@@ -97,25 +119,17 @@ async function probeUrlStatus(url: string, timeoutMs: number = 4000): Promise<{ 
   }
 }
 
-// GET /api/audit/website?url=...
-router.get('/website', async (req: Request, res: Response) => {
-  const targetUrl = req.query.url as string;
-  if (!targetUrl) {
-    return res.status(400).json({ error: 'Missing ?url query parameter' });
-  }
-
-  const cleanUrl = normalizeUrl(targetUrl);
+export async function performDeepAudit(cleanUrl: string): Promise<WebsiteAuditReport> {
   let parsedUrl: URL;
   try {
     parsedUrl = new URL(cleanUrl);
   } catch {
-    return res.status(400).json({ error: 'Invalid URL format' });
+    throw new Error('Invalid URL format');
   }
 
   const startTime = Date.now();
   let html = '';
   let finalUrl = cleanUrl;
-  let responseHeaders: Record<string, string> = {};
 
   try {
     const controller = new AbortController();
@@ -128,6 +142,9 @@ router.get('/website', async (req: Request, res: Response) => {
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 MarketingInsightsBot/1.0',
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0',
       },
       redirect: 'follow',
       signal: controller.signal,
@@ -135,22 +152,15 @@ router.get('/website', async (req: Request, res: Response) => {
 
     clearTimeout(timeout);
     finalUrl = fetchResponse.url;
-    fetchResponse.headers.forEach((val, key) => {
-      responseHeaders[key.toLowerCase()] = val;
-    });
 
     if (!fetchResponse.ok) {
-      return res.status(fetchResponse.status).json({
-        error: `Could not fetch website (${fetchResponse.status} ${fetchResponse.statusText})`,
-      });
+      throw new Error(`Could not fetch website (${fetchResponse.status} ${fetchResponse.statusText})`);
     }
 
     html = await fetchResponse.text();
   } catch (err: any) {
     console.error('[SiteAudit] Fetch failed:', err);
-    return res.status(502).json({
-      error: `Failed to connect to ${cleanUrl}: ${err.message || 'Connection timeout or network error'}`,
-    });
+    throw new Error(`Failed to connect to ${cleanUrl}: ${err.message || 'Connection timeout or network error'}`);
   }
 
   const fetchTimeMs = Date.now() - startTime;
@@ -214,7 +224,6 @@ router.get('/website', async (req: Request, res: Response) => {
         externalLinksCount++;
       }
     } catch {
-      // Relative or custom scheme
       internalLinksCount++;
     }
   });
@@ -248,14 +257,13 @@ router.get('/website', async (req: Request, res: Response) => {
         }
       }
     } catch {
-      // Malformed json-ld
+      // Ignore malformed JSON-LD
     }
   });
 
   // Tech Stack & Tag Sniffer
   const techStack: DetectedTech[] = [];
 
-  // 1. Google Analytics 4 (GA4)
   const ga4Match = html.match(/\b(G-[A-Z0-9]{8,12})\b/);
   if (ga4Match) {
     techStack.push({
@@ -266,7 +274,6 @@ router.get('/website', async (req: Request, res: Response) => {
     });
   }
 
-  // 2. Google Tag Manager (GTM)
   const gtmMatch = html.match(/\b(GTM-[A-Z0-9]{5,10})\b/);
   if (gtmMatch) {
     techStack.push({
@@ -277,7 +284,6 @@ router.get('/website', async (req: Request, res: Response) => {
     });
   }
 
-  // 3. Meta / Facebook Pixel
   const pixelMatch = html.match(/fbq\s*\(\s*['"]init['"]\s*,\s*['"]([0-9]{12,18})['"]/i) || html.match(/connect\.facebook\.net/);
   if (pixelMatch) {
     const pixelId = pixelMatch[1] || 'Detected in Scripts';
@@ -289,7 +295,6 @@ router.get('/website', async (req: Request, res: Response) => {
     });
   }
 
-  // 4. CMS Detection
   if (html.includes('wp-content') || html.includes('wp-includes') || /<meta[^>]*name=["']generator["'][^>]*content=["'][^"']*WordPress/i.test(html)) {
     techStack.push({
       name: 'WordPress CMS',
@@ -316,7 +321,6 @@ router.get('/website', async (req: Request, res: Response) => {
     });
   }
 
-  // 5. Security & SSL
   const hasSsl = finalUrl.startsWith('https://');
   if (hasSsl) {
     techStack.push({
@@ -329,7 +333,7 @@ router.get('/website', async (req: Request, res: Response) => {
   // Faults Analysis Engine
   const faults: SeoFault[] = [];
 
-  // Check 1: Title Tag
+  // 1. Title Tag
   if (!title) {
     faults.push({
       id: 'title-missing',
@@ -368,7 +372,7 @@ router.get('/website', async (req: Request, res: Response) => {
     });
   }
 
-  // Check 2: Meta Description
+  // 2. Meta Description
   if (!metaDescription) {
     faults.push({
       id: 'desc-missing',
@@ -407,7 +411,7 @@ router.get('/website', async (req: Request, res: Response) => {
     });
   }
 
-  // Check 3: H1 Heading Hierarchy
+  // 3. H1 Heading Hierarchy
   if (h1Elements.length === 0) {
     faults.push({
       id: 'h1-missing',
@@ -438,7 +442,7 @@ router.get('/website', async (req: Request, res: Response) => {
     });
   }
 
-  // Check 4: Images & Alt Attributes
+  // 4. Images & Alt Attributes
   if (imageCount === 0) {
     faults.push({
       id: 'images-none',
@@ -470,7 +474,7 @@ router.get('/website', async (req: Request, res: Response) => {
     });
   }
 
-  // Check 5: Indexability & Meta Robots
+  // 5. Indexability & Meta Robots
   if (metaRobots && (metaRobots.toLowerCase().includes('noindex') || metaRobots.toLowerCase().includes('none'))) {
     faults.push({
       id: 'robots-noindex',
@@ -491,7 +495,7 @@ router.get('/website', async (req: Request, res: Response) => {
     });
   }
 
-  // Check 6: Canonical URL
+  // 6. Canonical URL
   if (!canonicalUrl) {
     faults.push({
       id: 'canonical-missing',
@@ -512,7 +516,7 @@ router.get('/website', async (req: Request, res: Response) => {
     });
   }
 
-  // Check 7: Mobile Viewport
+  // 7. Mobile Viewport
   if (!metaViewport) {
     faults.push({
       id: 'viewport-missing',
@@ -533,7 +537,7 @@ router.get('/website', async (req: Request, res: Response) => {
     });
   }
 
-  // Check 8: Open Graph & Social Sharing
+  // 8. Open Graph & Social Sharing
   if (!ogTitle || !ogImage) {
     faults.push({
       id: 'social-og-incomplete',
@@ -554,7 +558,7 @@ router.get('/website', async (req: Request, res: Response) => {
     });
   }
 
-  // Check 9: Structured Data (Schema.org)
+  // 9. Structured Data (Schema.org)
   if (schemaTypes.length === 0) {
     faults.push({
       id: 'schema-missing',
@@ -575,7 +579,7 @@ router.get('/website', async (req: Request, res: Response) => {
     });
   }
 
-  // Check 10: Robots.txt & Sitemap.xml
+  // 10. Robots.txt & Sitemap.xml
   if (!robotsProbe.reachable) {
     faults.push({
       id: 'robots-file-missing',
@@ -616,7 +620,7 @@ router.get('/website', async (req: Request, res: Response) => {
     });
   }
 
-  // Check 11: Security & HTTPS
+  // 11. Security & HTTPS
   if (!hasSsl) {
     faults.push({
       id: 'security-no-ssl',
@@ -637,7 +641,7 @@ router.get('/website', async (req: Request, res: Response) => {
     });
   }
 
-  // Check 12: Content Word Count
+  // 12. Content Word Count
   if (wordCount < 250) {
     faults.push({
       id: 'content-thin',
@@ -680,7 +684,7 @@ router.get('/website', async (req: Request, res: Response) => {
   const estimatedVisits = Math.round((calculatedScore / 100) * (wordCount > 500 ? 18500 : 7500) + (internalLinksCount * 45));
   const potentialReach = Math.round((calculatedScore * 12) + (internalLinksCount * 8));
 
-  const report: WebsiteAuditReport = {
+  return {
     url: cleanUrl,
     finalUrl,
     hostname: parsedUrl.hostname,
@@ -727,8 +731,52 @@ router.get('/website', async (req: Request, res: Response) => {
       onPageSeoHealth: `${calculatedScore}% Optimized`,
     },
   };
+}
 
-  return res.json(report);
+// GET /api/audit/website?url=...
+router.get('/website', async (req: Request, res: Response) => {
+  const targetUrl = req.query.url as string;
+  if (!targetUrl) {
+    return res.status(400).json({ error: 'Missing ?url query parameter' });
+  }
+
+  const cleanUrl = normalizeUrl(targetUrl);
+  try {
+    const report = await performDeepAudit(cleanUrl);
+    return res.json(report);
+  } catch (err: any) {
+    console.error('[SiteAudit] Execution failed:', err);
+    return res.status(502).json({ error: err.message || 'Audit failed' });
+  }
+});
+
+// POST /api/audit/recheck-item
+router.post('/recheck-item', async (req: Request, res: Response) => {
+  const { url, faultId } = req.body;
+  if (!url || !faultId) {
+    return res.status(400).json({ error: 'Missing url or faultId in request body' });
+  }
+
+  const cleanUrl = normalizeUrl(url);
+  try {
+    const freshReport = await performDeepAudit(cleanUrl);
+    const group = getRuleGroup(faultId);
+    const updatedFault = findFaultByRuleGroup(freshReport.faults, group) || freshReport.faults.find((f) => f.id === faultId);
+    
+    const isResolved = updatedFault ? updatedFault.severity === 'passed' : false;
+
+    return res.json({
+      faultId,
+      ruleGroup: group,
+      resolved: isResolved,
+      currentSeverity: updatedFault?.severity || 'passed',
+      updatedFault,
+      updatedReport: freshReport,
+    });
+  } catch (err: any) {
+    console.error('[SiteAudit] Re-check failed:', err);
+    return res.status(502).json({ error: err.message || 'Re-check failed' });
+  }
 });
 
 export default router;

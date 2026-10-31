@@ -24,7 +24,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { fetchWebsiteAudit, getGradeColor, getSeverityBadge, getCategoryLabel, generateAuditPdf } from '../utils/audit';
+import { fetchWebsiteAudit, recheckSingleFault, getGradeColor, getSeverityBadge, getCategoryLabel, generateAuditPdf } from '../utils/audit';
 import { getStoredClients, getActiveClientId, setActiveClientId } from '../utils/clients';
 import type { WebsiteAuditReport, SeoFault } from '../types';
 
@@ -47,6 +47,76 @@ export function SiteAudit() {
   const [severityFilter, setSeverityFilter] = useState<'all' | 'critical' | 'warning' | 'passed'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [expandedFaults, setExpandedFaults] = useState<Record<string, boolean>>({});
+  const [recheckingMap, setRecheckingMap] = useState<Record<string, boolean>>({});
+  const [recheckFeedback, setRecheckFeedback] = useState<
+    Record<string, { type: 'resolved' | 'failed'; message: string }>
+  >({});
+  const [recheckingAll, setRecheckingAll] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'info' } | null>(null);
+
+  const handleRecheckSingle = async (faultId: string) => {
+    if (!currentUrl) return;
+    setRecheckingMap((prev) => ({ ...prev, [faultId]: true }));
+    try {
+      const res = await recheckSingleFault(currentUrl, faultId);
+      setReport(res.updatedReport);
+
+      if (res.resolved) {
+        setRecheckFeedback((prev) => ({
+          ...prev,
+          [faultId]: { type: 'resolved', message: 'Resolved! Passed 🎉' },
+        }));
+        setToastMessage({
+          text: `Fixed! "${res.updatedFault?.title || 'Issue'}" is now verified as passed!`,
+          type: 'success',
+        });
+      } else {
+        setRecheckFeedback((prev) => ({
+          ...prev,
+          [faultId]: {
+            type: 'failed',
+            message: `Still unresolved (${(res.updatedFault?.severity || res.currentSeverity).toUpperCase()})`,
+          },
+        }));
+      }
+
+      setTimeout(() => {
+        setRecheckFeedback((prev) => {
+          const next = { ...prev };
+          delete next[faultId];
+          return next;
+        });
+      }, 5000);
+      setTimeout(() => setToastMessage(null), 4000);
+    } catch (err: any) {
+      console.error('Re-check failed:', err);
+      setRecheckFeedback((prev) => ({
+        ...prev,
+        [faultId]: { type: 'failed', message: 'Re-check error' },
+      }));
+    } finally {
+      setRecheckingMap((prev) => ({ ...prev, [faultId]: false }));
+    }
+  };
+
+  const handleRecheckAll = async () => {
+    if (!currentUrl) return;
+    setRecheckingAll(true);
+    try {
+      const freshData = await fetchWebsiteAudit(currentUrl);
+      setReport(freshData);
+      setToastMessage({
+        text: 'Live re-audit complete! All items and scores refreshed.',
+        type: 'info',
+      });
+      setTimeout(() => setToastMessage(null), 4000);
+    } catch (err: any) {
+      console.error('Live re-audit failed:', err);
+      setError(err.message || 'Failed to re-audit website.');
+    } finally {
+      setRecheckingAll(false);
+    }
+  };
 
   const runAudit = useCallback(async (targetUrl: string) => {
     setLoading(true);
@@ -850,6 +920,24 @@ export function SiteAudit() {
                   <option value="security">Security & SSL</option>
                   <option value="social">Social Tags</option>
                 </select>
+
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={handleRecheckAll}
+                  disabled={recheckingAll}
+                  style={{
+                    height: '36px',
+                    padding: '0 14px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    gap: '6px',
+                  }}
+                  title="Re-fetch live website and recheck all audit rules"
+                >
+                  <RotateCw size={13} className={recheckingAll ? 'spinning' : ''} />
+                  {recheckingAll ? 'Re-checking Live Site...' : '⚡ Re-check All'}
+                </button>
               </div>
             </div>
 
@@ -914,32 +1002,85 @@ export function SiteAudit() {
                           </span>
                         </div>
 
-                        {hasDetails && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {recheckFeedback[fault.id] && (
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '3px 8px',
+                                borderRadius: 'var(--radius-pill)',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                background:
+                                  recheckFeedback[fault.id].type === 'resolved'
+                                    ? 'rgba(16, 185, 129, 0.15)'
+                                    : 'rgba(239, 68, 68, 0.15)',
+                                color:
+                                  recheckFeedback[fault.id].type === 'resolved' ? '#10b981' : '#ef4444',
+                                border:
+                                  recheckFeedback[fault.id].type === 'resolved'
+                                    ? '1px solid rgba(16, 185, 129, 0.3)'
+                                    : '1px solid rgba(239, 68, 68, 0.3)',
+                                animation: 'fadeIn 0.2s ease',
+                              }}
+                            >
+                              {recheckFeedback[fault.id].message}
+                            </span>
+                          )}
+
                           <button
                             type="button"
-                            onClick={() => toggleExpand(fault.id)}
+                            className="button button-secondary"
+                            onClick={() => handleRecheckSingle(fault.id)}
+                            disabled={recheckingMap[fault.id]}
                             style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: 'var(--muted)',
+                              height: '28px',
+                              padding: '0 10px',
+                              fontSize: '11.5px',
+                              gap: '5px',
+                              borderRadius: 'var(--radius-pill)',
+                              borderColor: 'var(--line)',
                               cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              fontSize: '12px',
                             }}
+                            title="Re-check live site to see if this issue has been fixed"
                           >
-                            {isExpanded ? (
-                              <>
-                                Hide Items <ChevronUp size={14} />
-                              </>
-                            ) : (
-                              <>
-                                View Affected Items <ChevronDown size={14} />
-                              </>
-                            )}
+                            <RotateCw
+                              size={12}
+                              className={recheckingMap[fault.id] ? 'spinning' : ''}
+                            />
+                            {recheckingMap[fault.id] ? 'Re-checking...' : 'Re-check'}
                           </button>
-                        )}
+
+                          {hasDetails && (
+                            <button
+                              type="button"
+                              onClick={() => toggleExpand(fault.id)}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--muted)',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '12px',
+                                padding: '4px 6px',
+                              }}
+                            >
+                              {isExpanded ? (
+                                <>
+                                  Hide Items <ChevronUp size={14} />
+                                </>
+                              ) : (
+                                <>
+                                  View Affected Items <ChevronDown size={14} />
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--ink)' }}>
@@ -1006,6 +1147,31 @@ export function SiteAudit() {
               </div>
             )}
           </div>
+        </div>
+      )}
+      {/* Floating Success / Action Toast */}
+      {toastMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            zIndex: 1000,
+            padding: '12px 20px',
+            borderRadius: 'var(--radius-pill)',
+            background: toastMessage.type === 'success' ? 'var(--green-gradient)' : 'var(--white)',
+            color: toastMessage.type === 'success' ? '#ffffff' : 'var(--ink)',
+            border: toastMessage.type === 'success' ? 'none' : '1px solid var(--line)',
+            boxShadow: 'var(--shadow-card)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '13.5px',
+            fontWeight: 600,
+          }}
+        >
+          <Sparkles size={16} />
+          {toastMessage.text}
         </div>
       )}
     </div>

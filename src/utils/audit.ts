@@ -14,6 +14,32 @@ export async function fetchWebsiteAudit(url: string): Promise<WebsiteAuditReport
   return res.json();
 }
 
+export interface RecheckResult {
+  faultId: string;
+  ruleGroup: string;
+  resolved: boolean;
+  currentSeverity: 'critical' | 'warning' | 'passed';
+  updatedFault?: SeoFault;
+  updatedReport: WebsiteAuditReport;
+}
+
+export async function recheckSingleFault(url: string, faultId: string): Promise<RecheckResult> {
+  const res = await fetch('/api/audit/recheck-item', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ url, faultId }),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || `Failed to recheck item (HTTP ${res.status})`);
+  }
+
+  return res.json();
+}
+
 export function getGradeColor(grade: string): string {
   switch (grade) {
     case 'A+':
