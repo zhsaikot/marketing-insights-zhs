@@ -253,6 +253,14 @@ export function Integrations({ user }: IntegrationsProps) {
 
         sessionStorage.setItem('oauth_redirect_uri', redirectUri);
         const res = await fetch(`${endpoint}?redirect_uri=${encodeURIComponent(redirectUri)}`);
+        const contentType = res.headers.get('content-type') || '';
+
+        if (!res.ok || !contentType.includes('application/json')) {
+          throw new Error(
+            `Backend API (${endpoint}) is not reachable on this domain (${res.status} ${res.statusText}). For local testing, open http://localhost:3000 where the local Express server is running.`
+          );
+        }
+
         const json = await res.json();
 
         if (json.configured && json.authUrl) {
