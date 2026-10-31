@@ -102,7 +102,7 @@ export function SiteAudit() {
   }) || [];
 
   return (
-    <div className="performance-page-container" style={{ paddingBottom: '48px' }}>
+    <div className="page-content" style={{ paddingBottom: '60px' }}>
       {/* Top Banner / Controller */}
       <div
         className="card"
@@ -146,10 +146,10 @@ export function SiteAudit() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 500 }}>Client:</span>
               <select
-                className="select"
+                className="pill-select"
                 value={selectedClientId}
                 onChange={(e) => handleClientChange(e.target.value)}
-                style={{ minWidth: '150px', height: '38px', fontSize: '13px' }}
+                style={{ minWidth: '150px', fontSize: '13px' }}
               >
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -162,7 +162,7 @@ export function SiteAudit() {
             {report && (
               <button
                 type="button"
-                className="button-secondary"
+                className="button button-secondary"
                 onClick={handleExportPdf}
                 style={{ height: '38px', gap: '6px', fontSize: '13px' }}
                 title="Download White-Label PDF Report"
@@ -198,13 +198,13 @@ export function SiteAudit() {
 
           <button
             type="submit"
-            className="button"
+            className="button button-primary"
             disabled={loading}
             style={{
               height: '44px',
               padding: '0 24px',
               fontSize: '14px',
-              fontWeight: 600,
+              fontWeight: 700,
               gap: '8px',
               minWidth: '170px',
             }}
@@ -222,8 +222,8 @@ export function SiteAudit() {
         </form>
 
         {/* Quick Presets */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', fontSize: '12px', color: 'var(--muted)' }}>
-          <span>Try quick sample:</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '14px', fontSize: '12.5px', color: 'var(--muted)', flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: 500 }}>Try quick sample:</span>
           {['https://github.com', 'https://wordpress.org', 'https://stripe.com'].map((sampleUrl) => (
             <button
               key={sampleUrl}
@@ -233,13 +233,15 @@ export function SiteAudit() {
                 runAudit(sampleUrl);
               }}
               style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--brand-green, #10b981)',
-                textDecoration: 'underline',
-                cursor: 'pointer',
-                padding: '2px 4px',
+                background: 'var(--paper-soft)',
+                border: '1px solid var(--line)',
+                color: 'var(--ink)',
+                borderRadius: 'var(--radius-pill)',
+                padding: '3px 10px',
                 fontSize: '12px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
               }}
             >
               {sampleUrl.replace('https://', '')}
@@ -769,46 +771,53 @@ export function SiteAudit() {
               </div>
 
               {/* Filter Controls */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
                 <div className="pill-segmented-control" style={{ margin: 0 }}>
                   <button
                     type="button"
-                    className={`pill-btn ${severityFilter === 'all' ? 'active' : ''}`}
+                    className={`pill-segmented-btn ${severityFilter === 'all' ? 'active' : ''}`}
                     onClick={() => setSeverityFilter('all')}
                   >
                     All ({report.faults.length})
                   </button>
                   <button
                     type="button"
-                    className={`pill-btn ${severityFilter === 'critical' ? 'active' : ''}`}
+                    className={`pill-segmented-btn ${severityFilter === 'critical' ? 'active' : ''}`}
                     onClick={() => setSeverityFilter('critical')}
-                    style={severityFilter === 'critical' ? { color: '#ef4444' } : {}}
+                    style={
+                      severityFilter === 'critical'
+                        ? { background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', color: '#ffffff', boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)' }
+                        : {}
+                    }
                   >
                     🔴 Critical ({report.summary.criticalCount})
                   </button>
                   <button
                     type="button"
-                    className={`pill-btn ${severityFilter === 'warning' ? 'active' : ''}`}
+                    className={`pill-segmented-btn ${severityFilter === 'warning' ? 'active' : ''}`}
                     onClick={() => setSeverityFilter('warning')}
-                    style={severityFilter === 'warning' ? { color: '#f59e0b' } : {}}
+                    style={
+                      severityFilter === 'warning'
+                        ? { background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: '#ffffff', boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)' }
+                        : {}
+                    }
                   >
                     🟡 Warnings ({report.summary.warningCount})
                   </button>
                   <button
                     type="button"
-                    className={`pill-btn ${severityFilter === 'passed' ? 'active' : ''}`}
+                    className={`pill-segmented-btn ${severityFilter === 'passed' ? 'active' : ''}`}
                     onClick={() => setSeverityFilter('passed')}
-                    style={severityFilter === 'passed' ? { color: '#10b981' } : {}}
                   >
                     🟢 Passed ({report.summary.passedCount})
                   </button>
                 </div>
 
                 <select
-                  className="select"
+                  className="pill-select"
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  style={{ height: '36px', fontSize: '12.5px' }}
+                  style={{ fontSize: '12px' }}
                 >
                   <option value="all">All Categories</option>
                   <option value="meta">Meta & Content</option>
