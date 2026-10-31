@@ -44,11 +44,13 @@ export function setDemoModeActive(active: boolean): void {
   localStorage.setItem(demoModeStorageKey, String(active));
 }
 
-export function readAnalyticsConnection(): AnalyticsConnection | null {
+export function readAnalyticsConnection(providerName?: string): AnalyticsConnection | null {
   try {
     const connections = JSON.parse(localStorage.getItem(connectionStorageKey) || '{}') as Record<string, AnalyticsConnection>;
-    const connection = connections['Google Analytics'];
-    return connection?.connected && connection.account ? connection : null;
+    if (providerName) {
+      return connections[providerName] || null;
+    }
+    return connections['Google Analytics 4'] || connections['Google Analytics'] || null;
   } catch {
     return null;
   }
@@ -161,15 +163,28 @@ export async function fetchAnalyticsReport(range: DateRangeKey = '30d', forceDem
   }
 
   const { google: googleToken, meta: metaToken } = await fetchServerTokens();
-  const gaConnection = readAnalyticsConnection();
-  const propertyId = googleToken?.account || gaConnection?.account || '384920184';
+  const gaConnection = readAnalyticsConnection('Google Analytics 4') || readAnalyticsConnection('Google Analytics');
+  const gscConnection = readAnalyticsConnection('Google Search Console');
+  const metaConnection = readAnalyticsConnection('Meta Business & Ads') || readAnalyticsConnection('Meta Ads');
+
+  const propertyId =
+    googleToken?.account && !googleToken.account.includes('Service Account') && !googleToken.account.includes('Auto-Detected')
+      ? googleToken.account
+      : gaConnection?.account || undefined;
+
+  const siteUrl = gscConnection?.account || undefined;
+  const adAccountId = metaToken?.account || metaConnection?.account || undefined;
 
   try {
     // 1. Fetch GA4 data
     const gaPromise = fetch('/api/analytics', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ propertyId, range }),
+      body: JSON.stringify({
+        propertyId,
+        range,
+        token: googleToken?.accessToken,
+      }),
     }).then((res) => (res.ok ? res.json() : null)).catch(() => null);
 
     // 2. Fetch Google Search Console live queries
@@ -178,7 +193,7 @@ export async function fetchAnalyticsReport(range: DateRangeKey = '30d', forceDem
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         token: googleToken?.accessToken,
-        siteUrl: 'https://acmecommerce.io',
+        siteUrl,
         range,
       }),
     }).then((res) => (res.ok ? res.json() : null)).catch(() => null);
@@ -189,7 +204,7 @@ export async function fetchAnalyticsReport(range: DateRangeKey = '30d', forceDem
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         token: metaToken?.accessToken,
-        adAccountId: metaToken?.account || 'act_primary',
+        adAccountId,
         range,
       }),
     }).then((res) => (res.ok ? res.json() : null)).catch(() => null);

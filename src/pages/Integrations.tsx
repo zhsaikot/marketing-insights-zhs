@@ -107,7 +107,7 @@ export function Integrations({ user }: IntegrationsProps) {
                 connected: true,
                 method: 'oauth',
                 account: token.account || c.account,
-                lastSynced: 'Live Token Synced',
+                lastSynced: token.isEnvConfigured ? 'Live .env Configured' : 'Live Token Synced',
               };
             }
             return c;
@@ -115,6 +115,77 @@ export function Integrations({ user }: IntegrationsProps) {
         );
       })
       .catch(() => {});
+  }, []);
+
+  // Handle OAuth Redirect Callback (e.g. ?code=xyz)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const error = params.get('error');
+
+    if (error) {
+      setStatusMessage(`OAuth Authorization Error: ${error}`);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+
+    if (code) {
+      const pendingProvider = (sessionStorage.getItem('oauth_pending_provider') || 'google') as 'google' | 'meta';
+      const endpoint = pendingProvider === 'meta' ? '/api/auth-meta' : '/api/auth-google';
+      const redirectUri = window.location.origin + window.location.pathname;
+
+      setLoading(true);
+      setStatusMessage(`Exchanging ${pendingProvider.toUpperCase()} authorization code for live access token...`);
+
+      fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, redirectUri }),
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || 'Failed to exchange authorization code');
+          }
+          return res.json();
+        })
+        .then(async (data) => {
+          if (data.token) {
+            await fetch('/api/tokens', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data.token),
+            });
+
+            const targetName = pendingProvider === 'meta' ? 'Meta Business & Ads' : 'Google Analytics 4';
+            updateConnectionState(targetName, {
+              connected: true,
+              method: 'oauth',
+              account: data.token.account,
+              lastSynced: 'Live Token Synced',
+            });
+
+            if (pendingProvider === 'google') {
+              updateConnectionState('Google Search Console', {
+                connected: true,
+                method: 'oauth',
+                account: 'Google Search Console Synced',
+                lastSynced: 'Live Token Synced',
+              });
+            }
+
+            setStatusMessage(`✓ ${pendingProvider.toUpperCase()} connected successfully via live OAuth 2.0!`);
+          }
+        })
+        .catch((err) => {
+          setStatusMessage(`OAuth Error: ${err instanceof Error ? err.message : 'Exchange failed'}`);
+        })
+        .finally(() => {
+          setLoading(false);
+          sessionStorage.removeItem('oauth_pending_provider');
+          window.history.replaceState({}, document.title, window.location.pathname);
+        });
+    }
   }, []);
 
   const configure = (item: Integration) => {
@@ -168,6 +239,7 @@ export function Integrations({ user }: IntegrationsProps) {
         const json = await res.json();
 
         if (json.configured && json.authUrl) {
+          sessionStorage.setItem('oauth_pending_provider', item.provider);
           window.location.href = json.authUrl;
         } else {
           setStatusMessage(

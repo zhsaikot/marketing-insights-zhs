@@ -12,6 +12,7 @@ export interface StoredToken {
   expiresAt?: number;
   scopes?: string[];
   connectedAt: string;
+  isEnvConfigured?: boolean;
 }
 
 const DATA_DIR = path.resolve(process.cwd(), '.data');
@@ -91,10 +92,63 @@ async function writeTokensToCloudOrDisk(tokens: Record<string, StoredToken>): Pr
   Object.assign(memoryVault, tokens);
 }
 
+export async function getEffectiveTokens(): Promise<Record<string, StoredToken>> {
+  const diskTokens = await readTokensFromCloudOrDisk();
+  const merged: Record<string, StoredToken> = { ...diskTokens };
+
+  // Detect Google configuration from .env / service-account file
+  if (!merged.google) {
+    const hasServiceAccount = Boolean(
+      process.env.GOOGLE_SERVICE_ACCOUNT_JSON ||
+        process.env.GOOGLE_APPLICATION_CREDENTIALS ||
+        fs.existsSync(path.resolve(process.cwd(), 'service-account.json')) ||
+        fs.existsSync(path.resolve(process.cwd(), 'google-credentials.json'))
+    );
+    const googleToken =
+      process.env.GOOGLE_ACCESS_TOKEN ||
+      process.env.GA4_ACCESS_TOKEN ||
+      process.env.GSC_TOKEN;
+    const propertyId = process.env.GA4_PROPERTY_ID;
+
+    if (hasServiceAccount || googleToken) {
+      merged.google = {
+        provider: 'google',
+        accessToken: googleToken || 'service_account_live_configured',
+        account: propertyId || (hasServiceAccount ? 'Service Account Active' : 'Live Token Active'),
+        connectedAt: new Date().toISOString(),
+        scopes: ['analytics.readonly', 'webmasters.readonly'],
+        isEnvConfigured: true,
+      };
+    }
+  }
+
+  // Detect Meta configuration from .env
+  if (!merged.meta) {
+    const metaToken =
+      process.env.META_ACCESS_TOKEN ||
+      process.env.FACEBOOK_ACCESS_TOKEN ||
+      process.env.META_TOKEN;
+    const metaAccount = process.env.META_AD_ACCOUNT_ID;
+
+    if (metaToken) {
+      merged.meta = {
+        provider: 'meta',
+        accessToken: metaToken,
+        account: metaAccount || 'act_primary',
+        connectedAt: new Date().toISOString(),
+        scopes: ['ads_read', 'read_insights'],
+        isEnvConfigured: true,
+      };
+    }
+  }
+
+  return merged;
+}
+
 router.get('/', async (req: Request, res: Response) => {
   const provider = req.query.provider as 'google' | 'meta' | undefined;
   try {
-    const tokens = await readTokensFromCloudOrDisk();
+    const tokens = await getEffectiveTokens();
     if (provider) {
       return res.json(tokens[provider] || null);
     }
